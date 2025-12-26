@@ -114,6 +114,11 @@ Following `duckworld-implementation-guide.md`. Current status:
 - [x] Step 3.3: Create integration pipeline (ChatPanel uses LLM)
 - [x] Step 3.4: Improve chat UI (loading states, better messages)
 - [x] Step 3.5: Add error handling
-### Phase 4: Voice Input (not started)
+### Phase 4: Voice Input ✅
+- [x] Step 4.1: Create speech recognition service (`src/services/speechRecognition.ts`)
+- [x] Step 4.2: Create VoiceButton component (`src/components/VoiceButton.tsx`)
+- [x] Step 4.3: Integrate voice with ChatPanel
+- [x] Step 4.4: Handle edge cases (permissions, silence, no speech)
+
 ### Phase 5: Voice Output (not started)
 ### Phase 6: Polish (not started)

@@ -1,27 +1,26 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { executeSandboxedCode } from '../sandbox/executor'
 import { useHistoryStore } from '../store/historyStore'
 import { callLLM, buildGameContext } from '../services/llmService'
+import { VoiceButton } from './VoiceButton'
 
 export function ChatPanel() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isListening, setIsListening] = useState(false)
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'game'; content: string }>>([
-    { role: 'game', content: "Hi! I'm DuckWorld! Try saying 'make the grass purple' or 'add a red ball'" },
+    { role: 'game', content: "Hi! I'm DuckWorld! Try saying 'make the grass purple' or click the mic to speak!" },
   ])
 
   const { undo, redo, canUndo, canRedo, addEntry } = useHistoryStore()
 
-  const addMessage = (role: 'user' | 'game', content: string) => {
+  const addMessage = useCallback((role: 'user' | 'game', content: string) => {
     setMessages((prev) => [...prev, { role, content }])
-  }
+  }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!input.trim() || isLoading) return
+  const processMessage = useCallback(async (userInput: string) => {
+    if (!userInput.trim() || isLoading) return
 
-    const userInput = input.trim()
-    setInput('')
     addMessage('user', userInput)
 
     // Handle special commands
@@ -87,7 +86,27 @@ export function ChatPanel() {
     }
 
     setIsLoading(false)
+  }, [isLoading, addMessage, canUndo, canRedo, undo, redo, addEntry])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+    const userInput = input.trim()
+    setInput('')
+    await processMessage(userInput)
   }
+
+  const handleVoiceResult = useCallback((transcript: string) => {
+    processMessage(transcript)
+  }, [processMessage])
+
+  const handleVoiceError = useCallback((error: string) => {
+    addMessage('game', error)
+  }, [addMessage])
+
+  const handleListeningChange = useCallback((listening: boolean) => {
+    setIsListening(listening)
+  }, [])
 
   return (
     <div className="w-80 bg-amber-50 border-4 border-amber-600 rounded-lg flex flex-col h-96">
@@ -115,22 +134,33 @@ export function ChatPanel() {
             Thinking... 🦆
           </div>
         )}
+        {isListening && (
+          <div className="bg-red-100 text-red-800 mr-4 p-2 rounded-lg text-sm animate-pulse">
+            🎤 Listening...
+          </div>
+        )}
       </div>
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-2 border-t border-amber-300">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Say something..."
-            disabled={isLoading}
+            placeholder="Type or click mic to speak..."
+            disabled={isLoading || isListening}
             className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:border-amber-500 disabled:bg-gray-100"
+          />
+          <VoiceButton
+            onResult={handleVoiceResult}
+            onError={handleVoiceError}
+            onListeningChange={handleListeningChange}
+            disabled={isLoading}
           />
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isListening}
             className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:bg-amber-400"
           >
             {isLoading ? '...' : '💬'}

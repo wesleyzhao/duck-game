@@ -417,6 +417,17 @@ export class GameRenderer {
     const centerX = entity.x + entity.width / 2
     const centerY = entity.y + entity.height / 2
 
+    // Check for custom shape first
+    const { customShapes } = useGameStore.getState()
+    const customShape = customShapes.get(entity.shape.toLowerCase())
+    if (customShape) {
+      // Scale based on entity size (use average of width/height divided by base size of 40)
+      const scale = (entity.width + entity.height) / 2 / 40
+      this.drawCustomShape(graphics, centerX, centerY, scale, customShape)
+      return
+    }
+
+    // Built-in shapes
     switch (entity.shape) {
       case 'lake':
         this.drawLake(graphics, entity)

@@ -4,8 +4,8 @@ export interface Position {
   y: number
 }
 
-// Entity shape types
-export type EntityShape = 'circle' | 'rectangle' | 'ellipse' | 'tree' | 'lake'
+// Entity shape types - built-in shapes plus custom shape names
+export type EntityShape = 'circle' | 'rectangle' | 'ellipse' | 'tree' | 'lake' | string
 
 // Behavior types for animations
 export type BehaviorType = 'bounce' | 'spin' | 'pulse' | 'float'

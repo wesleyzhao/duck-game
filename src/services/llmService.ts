@@ -26,13 +26,13 @@ const SYSTEM_PROMPT = `You are the game engine for DuckWorld, a magical game for
 - game.modifyHealth(amount) - Change health (positive or negative)
 
 ### Custom Shape Methods
-- game.defineShape(name, parts[]) - Define a custom shape from primitives. Then use with setPlayerAppearance({shape: name})
+- game.defineShape(name, parts[]) - Define a custom shape from primitives. Use with setPlayerAppearance({shape: name}) OR createEntity({shape: name})
   Primitive types:
   - {type: "circle", x, y, radius, color}
   - {type: "ellipse", x, y, rx, ry, color}
   - {type: "rect", x, y, width, height, color}
   - {type: "triangle", x, y, width, height, color}
-  Note: x,y are offsets from center. Shapes scale with player size.
+  Note: x,y are offsets from center. Shapes scale automatically.
 
 ### World Methods
 - game.getWorldInfo() - Returns {width: 800, height: 600, terrainColor, skyColor}
@@ -140,6 +140,15 @@ game.defineShape("cat", [
 ])
 game.setPlayerAppearance({shape: "cat"})
 game.say("Meow! You're now an adorable kitty cat!")
+
+User: "add a star"
+Code:
+game.defineShape("star", [
+  {type: "triangle", x: 0, y: -8, width: 20, height: 15, color: "#FFD700"},
+  {type: "triangle", x: 0, y: 8, width: 20, height: -15, color: "#FFD700"}
+])
+game.createEntity({name: "Star", x: game.random(100, 700), y: game.random(50, 150), width: 40, height: 40, shape: "star", color: "#FFD700"})
+game.say("A golden star appears in the sky!")
 `
 
 export interface LLMResponse {
