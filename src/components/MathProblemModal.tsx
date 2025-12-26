@@ -1,8 +1,57 @@
 import { useState, useEffect } from 'react'
 import { useMathStore } from '../store/mathStore'
 
+// Confetti particle component
+function Confetti() {
+  const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#1dd1a1']
+  const particles = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    left: Math.random() * 100,
+    delay: Math.random() * 0.5,
+    duration: 1 + Math.random() * 1,
+    size: 8 + Math.random() * 12,
+  }))
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute animate-confetti"
+          style={{
+            left: `${p.left}%`,
+            top: '-20px',
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            backgroundColor: p.color,
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes confetti {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(400px) rotate(720deg);
+            opacity: 0;
+          }
+        }
+        .animate-confetti {
+          animation: confetti linear forwards;
+        }
+      `}</style>
+    </div>
+  )
+}
+
 export function MathProblemModal() {
-  const { isActive, currentProblem, isLoading, lastFeedback, submitAnswer, closeProblem } = useMathStore()
+  const { isActive, currentProblem, isLoading, lastFeedback, showCelebration, submitAnswer, closeProblem } = useMathStore()
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -42,7 +91,10 @@ export function MathProblemModal() {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-amber-50 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl border-4 border-amber-600 relative">
+      <div className="bg-amber-50 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl border-4 border-amber-600 relative overflow-hidden">
+        {/* Celebration confetti */}
+        {showCelebration && <Confetti />}
+
         {/* Close button */}
         <button
           onClick={handleClose}

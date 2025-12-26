@@ -92,6 +92,12 @@ export const useMathStore = create<MathStore>((set, get) => ({
     const isCorrect = answer === currentProblem.answer
 
     if (isCorrect) {
+      // Play celebration sound immediately
+      playCorrectSound()
+
+      // Show visual celebration
+      set({ showCelebration: true })
+
       // Mark tree as solved
       useGameStore.getState().updateEntity(currentTreeId, { mathSolved: true })
 
@@ -99,22 +105,31 @@ export const useMathStore = create<MathStore>((set, get) => ({
       useGameStore.getState().modifyPoints(10)
 
       const feedback = "That's right! Great job! You earned 10 points!"
-      speak(feedback)
-
       set({ lastFeedback: feedback })
 
-      // Close after a short delay
+      // Delay voice until after sound effect plays
+      setTimeout(() => {
+        speak(feedback)
+      }, 500)
+
+      // Close after celebration completes
       setTimeout(() => {
         get().closeProblem()
-      }, 2000)
+      }, 2500)
 
       return { correct: true, feedback }
     } else {
-      // Wrong answer - give encouraging feedback
+      // Wrong answer - play gentle sound and give encouraging feedback
+      playWrongSound()
       set({ attempts: attempts + 1 })
 
       const feedback = getRandomFeedback()
-      speak(feedback)
+
+      // Short delay so sound plays first
+      setTimeout(() => {
+        speak(feedback)
+      }, 200)
+
       set({ lastFeedback: feedback })
 
       return { correct: false, feedback }
@@ -129,6 +144,7 @@ export const useMathStore = create<MathStore>((set, get) => ({
       isLoading: false,
       attempts: 0,
       lastFeedback: null,
+      showCelebration: false,
     })
   },
 }))
