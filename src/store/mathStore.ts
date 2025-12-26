@@ -95,7 +95,7 @@ export const useMathStore = create<MathStore>((set, get) => ({
       // Play celebration sound immediately
       playCorrectSound()
 
-      // Show visual celebration
+      // Show visual celebration (this triggers the game map celebration)
       set({ showCelebration: true })
 
       // Mark tree as solved
@@ -105,16 +105,26 @@ export const useMathStore = create<MathStore>((set, get) => ({
       useGameStore.getState().modifyPoints(10)
 
       const feedback = "That's right! Great job! You earned 10 points!"
-      set({ lastFeedback: feedback })
+
+      // Close modal immediately so user can see the duck celebration on the map!
+      set({
+        isActive: false,
+        currentProblem: null,
+        currentTreeId: null,
+        isLoading: false,
+        attempts: 0,
+        lastFeedback: null,
+        // Keep showCelebration true - it will be cleared after the animation
+      })
 
       // Delay voice until after sound effect plays
       setTimeout(() => {
         speak(feedback)
       }, 500)
 
-      // Close after celebration completes
+      // End celebration after animation completes
       setTimeout(() => {
-        get().closeProblem()
+        set({ showCelebration: false })
       }, 2500)
 
       return { correct: true, feedback }

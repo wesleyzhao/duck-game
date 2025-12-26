@@ -12,6 +12,7 @@ export class GameRenderer {
   private playerContainer: Container | null = null
   private playerGraphics: Graphics | null = null
   private unsubscribe: (() => void) | null = null
+  private unsubscribeMath: (() => void) | null = null
   private isDestroyed = false
 
   // Viewport size (what the player sees)
@@ -22,6 +23,12 @@ export class GameRenderer {
   private animationTime = 0
   private bobOffset = 0
   private breathScale = 1
+
+  // Celebration state
+  private isCelebrating = false
+  private celebrationTime = 0
+  private celebrationContainer: Container | null = null
+  private cakeSprites: Graphics[] = []
 
   // Input state
   private keysPressed = new Set<string>()
@@ -52,6 +59,7 @@ export class GameRenderer {
     this.entityContainer = new Container()
     this.playerContainer = new Container()
     this.playerGraphics = new Graphics()
+    this.celebrationContainer = new Container()
 
     // Initialize PixiJS application with VIEWPORT size (not world size)
     await this.app.init({
@@ -79,6 +87,7 @@ export class GameRenderer {
     this.worldContainer.addChild(this.entityContainer)
     this.worldContainer.addChild(this.playerContainer)
     this.playerContainer.addChild(this.playerGraphics)
+    this.worldContainer.addChild(this.celebrationContainer) // On top of everything
 
     // Add world container to stage
     this.app.stage.addChild(this.worldContainer)
@@ -95,6 +104,17 @@ export class GameRenderer {
       if (!this.isDestroyed) {
         this.renderTerrain()
         this.renderBoundary()
+      }
+    })
+
+    // Subscribe to math store for celebration
+    this.unsubscribeMath = useMathStore.subscribe((state) => {
+      if (!this.isDestroyed) {
+        if (state.showCelebration && !this.isCelebrating) {
+          this.startCelebration()
+        } else if (!state.showCelebration && this.isCelebrating) {
+          this.stopCelebration()
+        }
       }
     })
 
@@ -139,6 +159,12 @@ export class GameRenderer {
 
     // Process entity behaviors
     this.processBehaviors()
+
+    // Update celebration if active
+    if (this.isCelebrating) {
+      this.celebrationTime += this.app.ticker.deltaMS / 1000
+      this.updateCelebration()
+    }
 
     // Re-render everything
     this.renderTerrain()
@@ -340,7 +366,15 @@ export class GameRenderer {
     const { player, customShapes } = useGameStore.getState()
     const { x, y, appearance } = player
     const scale = appearance.size * this.breathScale
-    const animY = y + this.bobOffset
+
+    // Calculate Y offset - much bigger jump when celebrating!
+    let animY = y + this.bobOffset
+    if (this.isCelebrating) {
+      // Rapid jumping animation
+      const jumpHeight = 25 * Math.abs(Math.sin(this.celebrationTime * 12))
+      animY = y - jumpHeight
+    }
+
     const g = this.playerGraphics
 
     g.clear()
@@ -645,6 +679,131 @@ export class GameRenderer {
     }
   }
 
+  private startCelebration(): void {
+    this.isCelebrating = true
+    this.celebrationTime = 0
+    this.cakeSprites = []
+
+    if (!this.celebrationContainer) return
+
+    const { player } = useGameStore.getState()
+
+    // Create several cake slices that will fly toward the duck
+    for (let i = 0; i < 5; i++) {
+      const cake = new Graphics()
+
+      // Draw a cute cake slice
+      // Cake base (triangle-ish shape)
+      cake.moveTo(0, 0)
+      cake.lineTo(20, 10)
+      cake.lineTo(20, 25)
+      cake.lineTo(0, 25)
+      cake.closePath()
+      cake.fill('#FFE4B5') // Cream color
+
+      // Frosting on top
+      cake.rect(0, 0, 20, 6)
+      cake.fill('#FF69B4') // Pink frosting
+
+      // Cherry on top
+      cake.circle(10, -3, 5)
+      cake.fill('#FF0000')
+
+      // Store initial position data
+      const angle = (i / 5) * Math.PI * 2
+      const startRadius = 120
+      ;(cake as any).startX = player.x + Math.cos(angle) * startRadius
+      ;(cake as any).startY = player.y + Math.sin(angle) * startRadius
+      ;(cake as any).angle = angle
+      ;(cake as any).delay = i * 0.15
+
+      cake.x = (cake as any).startX
+      cake.y = (cake as any).startY
+
+      this.cakeSprites.push(cake)
+      this.celebrationContainer.addChild(cake)
+    }
+
+    // Also add confetti particles
+    for (let i = 0; i < 30; i++) {
+      const confetti = new Graphics()
+      const colors = ['#FF6B6B', '#FECA57', '#48DBFB', '#FF9FF3', '#54A0FF', '#1DD1A1']
+      const color = colors[Math.floor(Math.random() * colors.length)]
+      const size = 4 + Math.random() * 6
+
+      confetti.rect(0, 0, size, size)
+      confetti.fill(color)
+
+      ;(confetti as any).startX = player.x + (Math.random() - 0.5) * 200
+      ;(confetti as any).startY = player.y - 100 - Math.random() * 50
+      ;(confetti as any).velX = (Math.random() - 0.5) * 3
+      ;(confetti as any).velY = Math.random() * 2 + 1
+      ;(confetti as any).rotation = Math.random() * Math.PI * 2
+      ;(confetti as any).rotSpeed = (Math.random() - 0.5) * 0.3
+
+      confetti.x = (confetti as any).startX
+      confetti.y = (confetti as any).startY
+
+      this.cakeSprites.push(confetti)
+      this.celebrationContainer.addChild(confetti)
+    }
+  }
+
+  private updateCelebration(): void {
+    if (!this.celebrationContainer) return
+
+    const { player } = useGameStore.getState()
+
+    for (const sprite of this.cakeSprites) {
+      const data = sprite as any
+
+      if (data.angle !== undefined) {
+        // This is a cake - fly toward the duck
+        const delay = data.delay || 0
+        const t = Math.max(0, this.celebrationTime - delay)
+
+        if (t > 0) {
+          // Move toward duck with easing
+          const progress = Math.min(1, t / 0.8)
+          const eased = 1 - Math.pow(1 - progress, 3) // ease out cubic
+
+          sprite.x = data.startX + (player.x - data.startX) * eased
+          sprite.y = data.startY + (player.y - 10 - data.startY) * eased
+
+          // Rotate while flying
+          sprite.rotation = t * 5
+
+          // Shrink and fade as it reaches the duck (being eaten!)
+          if (progress > 0.7) {
+            const fadeProgress = (progress - 0.7) / 0.3
+            sprite.scale.set(1 - fadeProgress * 0.8)
+            sprite.alpha = 1 - fadeProgress
+          }
+        }
+      } else if (data.velY !== undefined) {
+        // This is confetti - fall down with physics
+        data.velY += 0.1 // gravity
+        sprite.x += data.velX
+        sprite.y += data.velY
+        sprite.rotation += data.rotSpeed
+
+        // Fade out over time
+        sprite.alpha = Math.max(0, 1 - this.celebrationTime / 2)
+      }
+    }
+  }
+
+  private stopCelebration(): void {
+    this.isCelebrating = false
+    this.celebrationTime = 0
+
+    // Clear celebration graphics
+    if (this.celebrationContainer) {
+      this.celebrationContainer.removeChildren()
+    }
+    this.cakeSprites = []
+  }
+
   destroy(): void {
     this.isDestroyed = true
 
@@ -658,10 +817,14 @@ export class GameRenderer {
       this.onKeyUp = null
     }
 
-    // Unsubscribe from store
+    // Unsubscribe from stores
     if (this.unsubscribe) {
       this.unsubscribe()
       this.unsubscribe = null
+    }
+    if (this.unsubscribeMath) {
+      this.unsubscribeMath()
+      this.unsubscribeMath = null
     }
 
     // Destroy PixiJS app
@@ -681,5 +844,7 @@ export class GameRenderer {
     this.entityContainer = null
     this.playerContainer = null
     this.playerGraphics = null
+    this.celebrationContainer = null
+    this.cakeSprites = []
   }
 }
