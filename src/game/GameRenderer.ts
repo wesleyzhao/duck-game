@@ -598,7 +598,7 @@ export class GameRenderer {
 
     // Draw math symbol badge if this is a math tree (and not yet solved)
     if (entity.hasMathSymbol && !entity.mathSolved) {
-      const badgeRadius = 12
+      const badgeRadius = 14
       const badgeX = foliageX
       const badgeY = foliageY
 
@@ -606,24 +606,24 @@ export class GameRenderer {
       graphics.circle(badgeX, badgeY, badgeRadius)
       graphics.fill('#FFD700')
 
-      // Draw "?" symbol using shapes
-      // Top curve of ?
-      graphics.arc(badgeX, badgeY - 3, 5, Math.PI, 0)
-      graphics.stroke({ width: 3, color: '#333333' })
+      // Orange border
+      graphics.circle(badgeX, badgeY, badgeRadius)
+      graphics.stroke({ width: 2, color: '#FF8C00' })
 
-      // Stem of ?
-      graphics.moveTo(badgeX + 5, badgeY - 3)
-      graphics.lineTo(badgeX, badgeY + 2)
-      graphics.stroke({ width: 3, color: '#333333' })
-
-      // Dot of ?
-      graphics.circle(badgeX, badgeY + 6, 2)
+      // Draw "+" symbol using rectangles (simpler than ?)
+      const plusSize = 8
+      const plusThick = 3
+      // Horizontal bar
+      graphics.rect(badgeX - plusSize/2, badgeY - plusThick/2, plusSize, plusThick)
+      graphics.fill('#333333')
+      // Vertical bar
+      graphics.rect(badgeX - plusThick/2, badgeY - plusSize/2, plusThick, plusSize)
       graphics.fill('#333333')
     }
 
-    // Draw checkmark if solved
+    // Draw checkmark badge if solved
     if (entity.mathSolved) {
-      const badgeRadius = 12
+      const badgeRadius = 14
       const badgeX = foliageX
       const badgeY = foliageY
 
@@ -631,11 +631,17 @@ export class GameRenderer {
       graphics.circle(badgeX, badgeY, badgeRadius)
       graphics.fill('#00AA00')
 
-      // Checkmark
-      graphics.moveTo(badgeX - 5, badgeY)
-      graphics.lineTo(badgeX - 1, badgeY + 5)
-      graphics.lineTo(badgeX + 6, badgeY - 4)
-      graphics.stroke({ width: 3, color: '#FFFFFF' })
+      // White border
+      graphics.circle(badgeX, badgeY, badgeRadius)
+      graphics.stroke({ width: 2, color: '#00FF00' })
+
+      // Simple checkmark using a thick "V" shape with rectangles
+      // Left part of check
+      graphics.rect(badgeX - 5, badgeY - 1, 6, 3)
+      graphics.fill('#FFFFFF')
+      // Right part of check (rotated effect with position)
+      graphics.rect(badgeX - 1, badgeY - 5, 3, 8)
+      graphics.fill('#FFFFFF')
     }
   }
 

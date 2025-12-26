@@ -1,7 +1,21 @@
 import { create } from 'zustand'
-import { MathProblem, generateMathProblem, generateLocalMathProblem, getWrongAnswerFeedback } from '../services/mathService'
+import { MathProblem, generateLocalMathProblem } from '../services/mathService'
 import { useGameStore } from './gameStore'
 import { speak } from '../services/voiceService'
+
+// Local encouraging feedback for wrong answers (faster than LLM)
+const wrongAnswerFeedback = [
+  "Almost! Try again, you've got this!",
+  "Not quite, but keep trying!",
+  "Oops! Give it another shot!",
+  "So close! Try one more time!",
+  "That's okay! Math takes practice. Try again!",
+  "Hmm, not that one. You can do it!",
+]
+
+function getRandomFeedback(): string {
+  return wrongAnswerFeedback[Math.floor(Math.random() * wrongAnswerFeedback.length)]
+}
 
 interface MathStore {
   // Current state
@@ -27,19 +41,32 @@ export const useMathStore = create<MathStore>((set, get) => ({
   lastFeedback: null,
 
   triggerMathProblem: async (treeId: string) => {
+    const state = get()
+
+    // Don't trigger if already active
+    if (state.isActive || state.isLoading) {
+      return
+    }
+
     // Check if tree is already solved
     const entity = useGameStore.getState().getEntity(treeId)
     if (!entity || entity.mathSolved) {
       return
     }
 
-    set({ isLoading: true, isActive: true, currentTreeId: treeId, attempts: 0, lastFeedback: null })
+    // Reset everything and set loading
+    set({
+      isLoading: true,
+      isActive: true,
+      currentTreeId: treeId,
+      currentProblem: null,
+      attempts: 0,
+      lastFeedback: null
+    })
 
-    // Try to get problem from LLM, fall back to local generation
-    let problem = await generateMathProblem()
-    if (!problem) {
-      problem = generateLocalMathProblem()
-    }
+    // Always use local generation for reliability (LLM can be slow/unreliable)
+    // This ensures unique random problems each time
+    const problem = generateLocalMathProblem()
 
     set({ currentProblem: problem, isLoading: false })
 
@@ -75,19 +102,10 @@ export const useMathStore = create<MathStore>((set, get) => ({
 
       return { correct: true, feedback }
     } else {
-      // Wrong answer - get encouragement from LLM
+      // Wrong answer - give encouraging feedback
       set({ attempts: attempts + 1 })
 
-      const response = await getWrongAnswerFeedback(
-        currentProblem.question,
-        answer,
-        currentProblem.answer
-      )
-
-      const feedback = response.hint
-        ? `${response.encouragement} ${response.hint}`
-        : response.encouragement
-
+      const feedback = getRandomFeedback()
       speak(feedback)
       set({ lastFeedback: feedback })
 
