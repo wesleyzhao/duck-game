@@ -1,6 +1,7 @@
 import { GameCanvas } from './components/GameCanvas'
 import { HUD } from './components/HUD'
 import { ChatPanel } from './components/ChatPanel'
+import { MathProblemModal } from './components/MathProblemModal'
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <HUD />
       </div>
       <ChatPanel />
+      <MathProblemModal />
     </div>
   )
 }

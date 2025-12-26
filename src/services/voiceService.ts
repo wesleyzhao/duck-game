@@ -82,7 +82,7 @@ async function speakWithElevenLabs(text: string, apiKey: string): Promise<void> 
           similarity_boost: 0.75,
           style: 0.4, // Lower style = more natural, less rushed
           use_speaker_boost: true,
-          speed: 0.85, // Slightly slower than normal (1.0)
+          speed: 0.92, // Slightly slower than normal (1.0)
         },
       }),
     }

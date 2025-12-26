@@ -1,5 +1,6 @@
 import { Application, Graphics, Container } from 'pixi.js'
 import { useGameStore } from '../store/gameStore'
+import { useMathStore } from '../store/mathStore'
 import { EntityConfig, ShapePrimitive } from '../types/game'
 
 export class GameRenderer {
@@ -132,6 +133,9 @@ export class GameRenderer {
 
     // Process movement input
     this.processMovement()
+
+    // Check for math tree collisions
+    this.checkMathTreeCollision()
 
     // Process entity behaviors
     this.processBehaviors()
@@ -270,6 +274,37 @@ export class GameRenderer {
     // Apply movement if any
     if (dx !== 0 || dy !== 0) {
       useGameStore.getState().movePlayer(dx, dy)
+    }
+  }
+
+  private checkMathTreeCollision(): void {
+    const mathStore = useMathStore.getState()
+
+    // Don't check if a problem is already active
+    if (mathStore.isActive) return
+
+    const { player, entities } = useGameStore.getState()
+    const playerRadius = 25 // Collision radius
+
+    for (const entity of entities) {
+      // Only check math trees that haven't been solved
+      if (!entity.hasMathSymbol || entity.mathSolved) continue
+
+      // Check distance to tree center
+      const treeCenterX = entity.x + entity.width / 2
+      const treeCenterY = entity.y + entity.height / 2
+      const dx = player.x - treeCenterX
+      const dy = player.y - treeCenterY
+      const distance = Math.sqrt(dx * dx + dy * dy)
+
+      // Trigger if close enough (tree radius + player radius)
+      const triggerDistance = entity.width / 2 + playerRadius + 10
+
+      if (distance < triggerDistance) {
+        // Trigger math problem!
+        mathStore.triggerMathProblem(entity.id)
+        break
+      }
     }
   }
 
@@ -554,11 +589,54 @@ export class GameRenderer {
     graphics.rect(trunkX, trunkY, trunkWidth, trunkHeight)
     graphics.fill('#8B4513')
 
-    // Foliage (green circle)
+    // Foliage (green circle) - use different color if solved
     const foliageX = entity.x + entity.width / 2
     const foliageY = entity.y + foliageRadius
     graphics.circle(foliageX, foliageY, foliageRadius)
-    graphics.fill(entity.color)
+    const foliageColor = entity.mathSolved ? '#32CD32' : entity.color // Lime green if solved
+    graphics.fill(foliageColor)
+
+    // Draw math symbol badge if this is a math tree (and not yet solved)
+    if (entity.hasMathSymbol && !entity.mathSolved) {
+      const badgeRadius = 12
+      const badgeX = foliageX
+      const badgeY = foliageY
+
+      // Yellow badge circle
+      graphics.circle(badgeX, badgeY, badgeRadius)
+      graphics.fill('#FFD700')
+
+      // Draw "?" symbol using shapes
+      // Top curve of ?
+      graphics.arc(badgeX, badgeY - 3, 5, Math.PI, 0)
+      graphics.stroke({ width: 3, color: '#333333' })
+
+      // Stem of ?
+      graphics.moveTo(badgeX + 5, badgeY - 3)
+      graphics.lineTo(badgeX, badgeY + 2)
+      graphics.stroke({ width: 3, color: '#333333' })
+
+      // Dot of ?
+      graphics.circle(badgeX, badgeY + 6, 2)
+      graphics.fill('#333333')
+    }
+
+    // Draw checkmark if solved
+    if (entity.mathSolved) {
+      const badgeRadius = 12
+      const badgeX = foliageX
+      const badgeY = foliageY
+
+      // Green badge circle
+      graphics.circle(badgeX, badgeY, badgeRadius)
+      graphics.fill('#00AA00')
+
+      // Checkmark
+      graphics.moveTo(badgeX - 5, badgeY)
+      graphics.lineTo(badgeX - 1, badgeY + 5)
+      graphics.lineTo(badgeX + 6, badgeY - 4)
+      graphics.stroke({ width: 3, color: '#FFFFFF' })
+    }
   }
 
   destroy(): void {

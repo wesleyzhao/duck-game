@@ -80,6 +80,7 @@ const initialEntities: EntityConfig[] = [
     color: '#228B22',
     solid: true,
     behaviors: [],
+    hasMathSymbol: true,
   },
   {
     id: 'tree-center-2',
@@ -104,6 +105,7 @@ const initialEntities: EntityConfig[] = [
     color: '#228B22',
     solid: true,
     behaviors: [],
+    hasMathSymbol: true,
   },
   // Trees spread around the world
   {
@@ -117,6 +119,7 @@ const initialEntities: EntityConfig[] = [
     color: '#228B22',
     solid: true,
     behaviors: [],
+    hasMathSymbol: true,
   },
   {
     id: 'tree-2',
@@ -141,6 +144,7 @@ const initialEntities: EntityConfig[] = [
     color: '#228B22',
     solid: true,
     behaviors: [],
+    hasMathSymbol: true,
   },
   {
     id: 'tree-4',
@@ -165,6 +169,7 @@ const initialEntities: EntityConfig[] = [
     color: '#228B22',
     solid: true,
     behaviors: [],
+    hasMathSymbol: true,
   },
   {
     id: 'tree-6',
@@ -189,6 +194,7 @@ const initialEntities: EntityConfig[] = [
     color: '#228B22',
     solid: true,
     behaviors: [],
+    hasMathSymbol: true,
   },
   {
     id: 'tree-8',

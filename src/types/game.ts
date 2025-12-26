@@ -28,6 +28,9 @@ export interface EntityConfig {
   color: string
   solid: boolean
   behaviors: BehaviorConfig[]
+  // Math tree properties
+  hasMathSymbol?: boolean
+  mathSolved?: boolean
 }
 
 // Shape primitives for custom shapes
