@@ -39,6 +39,7 @@ export interface GameSandboxAPI {
   getCreated(name: string): EntityConfig | undefined
   getCreatedEntities(): EntityConfig[]
   findByName(name: string): EntityConfig | undefined
+  findAllByName(name: string): EntityConfig[]
   updateEntity(id: string, updates: Partial<EntityConfig>): boolean
   deleteEntity(id: string): boolean
   getAllEntities(): EntityConfig[]

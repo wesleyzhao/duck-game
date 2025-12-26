@@ -3,13 +3,19 @@ import { useGameStore } from '../store/gameStore'
 import { EntityConfig, ShapePrimitive } from '../types/game'
 
 export class GameRenderer {
-  private app: Application
-  private terrainGraphics: Graphics
-  private entityContainer: Container
-  private playerContainer: Container
-  private playerGraphics: Graphics
-  private initialized = false
+  private app: Application | null = null
+  private worldContainer: Container | null = null
+  private terrainGraphics: Graphics | null = null
+  private boundaryGraphics: Graphics | null = null
+  private entityContainer: Container | null = null
+  private playerContainer: Container | null = null
+  private playerGraphics: Graphics | null = null
   private unsubscribe: (() => void) | null = null
+  private isDestroyed = false
+
+  // Viewport size (what the player sees)
+  private readonly VIEWPORT_WIDTH = 800
+  private readonly VIEWPORT_HEIGHT = 550
 
   // Animation state
   private animationTime = 0
@@ -18,7 +24,11 @@ export class GameRenderer {
 
   // Input state
   private keysPressed = new Set<string>()
-  private readonly MOVE_SPEED = 4
+  private readonly MOVE_SPEED = 8
+
+  // Keyboard event handlers (stored for cleanup)
+  private onKeyDown: ((e: KeyboardEvent) => void) | null = null
+  private onKeyUp: ((e: KeyboardEvent) => void) | null = null
 
   // Behavior state for entities (position offsets, etc.)
   private behaviorState = new Map<string, {
@@ -28,41 +38,63 @@ export class GameRenderer {
     baseY?: number
   }>()
 
-  constructor() {
+  async init(container: HTMLElement): Promise<void> {
+    if (this.isDestroyed) return
+
+    const { world } = useGameStore.getState()
+
+    // Create all objects fresh
     this.app = new Application()
+    this.worldContainer = new Container()
     this.terrainGraphics = new Graphics()
+    this.boundaryGraphics = new Graphics()
     this.entityContainer = new Container()
     this.playerContainer = new Container()
     this.playerGraphics = new Graphics()
-  }
 
-  async init(container: HTMLElement): Promise<void> {
-    const { world } = useGameStore.getState()
-
-    // Initialize PixiJS application
+    // Initialize PixiJS application with VIEWPORT size (not world size)
     await this.app.init({
-      width: world.width,
-      height: world.height,
+      width: this.VIEWPORT_WIDTH,
+      height: this.VIEWPORT_HEIGHT,
       backgroundColor: world.skyColor,
     })
+
+    // Check if destroyed during async init
+    if (this.isDestroyed) {
+      try {
+        this.app?.destroy(true)
+      } catch (e) {
+        // Ignore - already destroyed
+      }
+      return
+    }
 
     // Add canvas to DOM
     container.appendChild(this.app.canvas)
 
-    // Setup layer hierarchy (terrain -> entities -> player)
-    this.app.stage.addChild(this.terrainGraphics)
-    this.app.stage.addChild(this.entityContainer)
-    this.app.stage.addChild(this.playerContainer)
+    // Setup layer hierarchy inside world container
+    this.worldContainer.addChild(this.terrainGraphics)
+    this.worldContainer.addChild(this.boundaryGraphics)
+    this.worldContainer.addChild(this.entityContainer)
+    this.worldContainer.addChild(this.playerContainer)
     this.playerContainer.addChild(this.playerGraphics)
+
+    // Add world container to stage
+    this.app.stage.addChild(this.worldContainer)
 
     // Initial render
     this.renderTerrain()
+    this.renderBoundary()
     this.renderEntities()
     this.renderPlayer()
+    this.updateCamera()
 
-    // Subscribe to store changes (terrain only - entities handled in game loop)
+    // Subscribe to store changes
     this.unsubscribe = useGameStore.subscribe(() => {
-      this.renderTerrain()
+      if (!this.isDestroyed) {
+        this.renderTerrain()
+        this.renderBoundary()
+      }
     })
 
     // Setup keyboard input
@@ -70,32 +102,25 @@ export class GameRenderer {
 
     // Start game loop for animations
     this.app.ticker.add(this.gameLoop.bind(this))
-
-    this.initialized = true
   }
 
   private setupKeyboardInput(): void {
-    const onKeyDown = (e: KeyboardEvent) => {
+    this.onKeyDown = (e: KeyboardEvent) => {
       this.keysPressed.add(e.key.toLowerCase())
     }
 
-    const onKeyUp = (e: KeyboardEvent) => {
+    this.onKeyUp = (e: KeyboardEvent) => {
       this.keysPressed.delete(e.key.toLowerCase())
     }
 
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
-
-    // Store cleanup references
-    const originalDestroy = this.destroy.bind(this)
-    this.destroy = () => {
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('keyup', onKeyUp)
-      originalDestroy()
-    }
+    window.addEventListener('keydown', this.onKeyDown)
+    window.addEventListener('keyup', this.onKeyUp)
   }
 
   private gameLoop(): void {
+    // Check if destroyed or not initialized
+    if (this.isDestroyed || !this.app) return
+
     // Update animation time (in seconds)
     this.animationTime += this.app.ticker.deltaMS / 1000
 
@@ -111,9 +136,62 @@ export class GameRenderer {
     // Process entity behaviors
     this.processBehaviors()
 
-    // Re-render entities and player
+    // Re-render everything
+    this.renderTerrain()
+    this.renderBoundary()
     this.renderEntities()
     this.renderPlayer()
+
+    // Update camera to follow player
+    this.updateCamera()
+  }
+
+  private updateCamera(): void {
+    if (!this.worldContainer) return
+
+    const { player, world } = useGameStore.getState()
+
+    // Calculate camera position to center on player
+    let cameraX = player.x - this.VIEWPORT_WIDTH / 2
+    let cameraY = player.y - this.VIEWPORT_HEIGHT / 2
+
+    // Clamp camera to world bounds
+    cameraX = Math.max(0, Math.min(world.width - this.VIEWPORT_WIDTH, cameraX))
+    cameraY = Math.max(0, Math.min(world.height - this.VIEWPORT_HEIGHT, cameraY))
+
+    // Move world container (negative because we move the world, not the camera)
+    this.worldContainer.x = -cameraX
+    this.worldContainer.y = -cameraY
+  }
+
+  private renderBoundary(): void {
+    if (!this.boundaryGraphics) return
+
+    const { world } = useGameStore.getState()
+    const borderWidth = 12
+
+    this.boundaryGraphics.clear()
+
+    // Draw a dark border around the entire world edge
+    this.boundaryGraphics.rect(0, 0, world.width, borderWidth) // top
+    this.boundaryGraphics.fill('#5D4037')
+    this.boundaryGraphics.rect(0, world.height - borderWidth, world.width, borderWidth) // bottom
+    this.boundaryGraphics.fill('#5D4037')
+    this.boundaryGraphics.rect(0, 0, borderWidth, world.height) // left
+    this.boundaryGraphics.fill('#5D4037')
+    this.boundaryGraphics.rect(world.width - borderWidth, 0, borderWidth, world.height) // right
+    this.boundaryGraphics.fill('#5D4037')
+
+    // Add a lighter inner border for depth
+    const innerBorder = 4
+    this.boundaryGraphics.rect(borderWidth, borderWidth, world.width - borderWidth * 2, innerBorder) // top inner
+    this.boundaryGraphics.fill('#8D6E63')
+    this.boundaryGraphics.rect(borderWidth, world.height - borderWidth - innerBorder, world.width - borderWidth * 2, innerBorder) // bottom inner
+    this.boundaryGraphics.fill('#8D6E63')
+    this.boundaryGraphics.rect(borderWidth, borderWidth, innerBorder, world.height - borderWidth * 2) // left inner
+    this.boundaryGraphics.fill('#8D6E63')
+    this.boundaryGraphics.rect(world.width - borderWidth - innerBorder, borderWidth, innerBorder, world.height - borderWidth * 2) // right inner
+    this.boundaryGraphics.fill('#8D6E63')
   }
 
   private processBehaviors(): void {
@@ -175,17 +253,17 @@ export class GameRenderer {
     let dx = 0
     let dy = 0
 
-    // Arrow keys and WASD
-    if (this.keysPressed.has('arrowup') || this.keysPressed.has('w')) {
+    // Arrow keys only (WASD disabled to not interfere with typing)
+    if (this.keysPressed.has('arrowup')) {
       dy -= this.MOVE_SPEED
     }
-    if (this.keysPressed.has('arrowdown') || this.keysPressed.has('s')) {
+    if (this.keysPressed.has('arrowdown')) {
       dy += this.MOVE_SPEED
     }
-    if (this.keysPressed.has('arrowleft') || this.keysPressed.has('a')) {
+    if (this.keysPressed.has('arrowleft')) {
       dx -= this.MOVE_SPEED
     }
-    if (this.keysPressed.has('arrowright') || this.keysPressed.has('d')) {
+    if (this.keysPressed.has('arrowright')) {
       dx += this.MOVE_SPEED
     }
 
@@ -195,7 +273,9 @@ export class GameRenderer {
     }
   }
 
-  renderTerrain(): void {
+  private renderTerrain(): void {
+    if (!this.terrainGraphics) return
+
     const { world } = useGameStore.getState()
 
     this.terrainGraphics.clear()
@@ -203,7 +283,9 @@ export class GameRenderer {
     this.terrainGraphics.fill(world.terrainColor)
   }
 
-  renderEntities(): void {
+  private renderEntities(): void {
+    if (!this.entityContainer) return
+
     const { entities } = useGameStore.getState()
 
     // Clear previous entities
@@ -217,36 +299,39 @@ export class GameRenderer {
     }
   }
 
-  renderPlayer(): void {
+  private renderPlayer(): void {
+    if (!this.playerGraphics) return
+
     const { player, customShapes } = useGameStore.getState()
     const { x, y, appearance } = player
     const scale = appearance.size * this.breathScale
     const animY = y + this.bobOffset
+    const g = this.playerGraphics
 
-    this.playerGraphics.clear()
+    g.clear()
 
     // Check for custom shape first
     const customShape = customShapes.get(appearance.shape.toLowerCase())
     if (customShape) {
-      this.drawCustomShape(this.playerGraphics, x, animY, scale, customShape)
+      this.drawCustomShape(g, x, animY, scale, customShape)
       return
     }
 
     // Built-in shapes
     switch (appearance.shape) {
       case 'dinosaur':
-        this.drawDinosaur(x, animY, scale, appearance.color)
+        this.drawDinosaur(g, x, animY, scale, appearance.color)
         break
       case 'bunny':
-        this.drawBunny(x, animY, scale, appearance.color)
+        this.drawBunny(g, x, animY, scale, appearance.color)
         break
       case 'duck':
       default:
-        this.drawDuck(x, animY, scale, appearance.color)
+        this.drawDuck(g, x, animY, scale, appearance.color)
     }
   }
 
-  private drawDuck(x: number, y: number, scale: number, color: string): void {
+  private drawDuck(g: Graphics, x: number, y: number, scale: number, color: string): void {
     const bodyWidth = 30 * scale
     const bodyHeight = 20 * scale
     const headRadius = 10 * scale
@@ -254,121 +339,121 @@ export class GameRenderer {
     const beakHeight = 6 * scale
 
     // Body
-    this.playerGraphics.ellipse(x, y, bodyWidth / 2, bodyHeight / 2)
-    this.playerGraphics.fill(color)
+    g.ellipse(x, y, bodyWidth / 2, bodyHeight / 2)
+    g.fill(color)
 
     // Head
     const headX = x + bodyWidth * 0.3
     const headY = y - bodyHeight * 0.3
-    this.playerGraphics.circle(headX, headY, headRadius)
-    this.playerGraphics.fill(color)
+    g.circle(headX, headY, headRadius)
+    g.fill(color)
 
     // Beak
     const beakX = headX + headRadius + beakWidth / 2 - 2
     const beakY = headY + 2
-    this.playerGraphics.ellipse(beakX, beakY, beakWidth / 2, beakHeight / 2)
-    this.playerGraphics.fill('#FF8C00')
+    g.ellipse(beakX, beakY, beakWidth / 2, beakHeight / 2)
+    g.fill('#FF8C00')
 
     // Eye
     const eyeX = headX + 3 * scale
     const eyeY = headY - 2 * scale
-    this.playerGraphics.circle(eyeX, eyeY, 3 * scale)
-    this.playerGraphics.fill('#000000')
-    this.playerGraphics.circle(eyeX + 1 * scale, eyeY - 1 * scale, 1 * scale)
-    this.playerGraphics.fill('#FFFFFF')
+    g.circle(eyeX, eyeY, 3 * scale)
+    g.fill('#000000')
+    g.circle(eyeX + 1 * scale, eyeY - 1 * scale, 1 * scale)
+    g.fill('#FFFFFF')
   }
 
-  private drawDinosaur(x: number, y: number, scale: number, color: string): void {
+  private drawDinosaur(g: Graphics, x: number, y: number, scale: number, color: string): void {
     // Body (larger oval)
     const bodyWidth = 40 * scale
     const bodyHeight = 25 * scale
-    this.playerGraphics.ellipse(x, y, bodyWidth / 2, bodyHeight / 2)
-    this.playerGraphics.fill(color)
+    g.ellipse(x, y, bodyWidth / 2, bodyHeight / 2)
+    g.fill(color)
 
     // Head (circle, to the right)
     const headX = x + bodyWidth * 0.4
     const headY = y - bodyHeight * 0.2
     const headRadius = 12 * scale
-    this.playerGraphics.circle(headX, headY, headRadius)
-    this.playerGraphics.fill(color)
+    g.circle(headX, headY, headRadius)
+    g.fill(color)
 
     // Snout
     const snoutX = headX + headRadius + 6 * scale
     const snoutY = headY + 2 * scale
-    this.playerGraphics.ellipse(snoutX, snoutY, 8 * scale, 5 * scale)
-    this.playerGraphics.fill(color)
+    g.ellipse(snoutX, snoutY, 8 * scale, 5 * scale)
+    g.fill(color)
 
     // Spikes on back (3 triangles)
     const spikeColor = '#' + (parseInt(color.slice(1), 16) - 0x222222).toString(16).padStart(6, '0')
     for (let i = 0; i < 3; i++) {
       const spikeX = x - 15 * scale + i * 12 * scale
       const spikeY = y - bodyHeight / 2
-      this.playerGraphics.moveTo(spikeX, spikeY)
-      this.playerGraphics.lineTo(spikeX + 5 * scale, spikeY - 10 * scale)
-      this.playerGraphics.lineTo(spikeX + 10 * scale, spikeY)
-      this.playerGraphics.fill(spikeColor.startsWith('#') ? spikeColor : color)
+      g.moveTo(spikeX, spikeY)
+      g.lineTo(spikeX + 5 * scale, spikeY - 10 * scale)
+      g.lineTo(spikeX + 10 * scale, spikeY)
+      g.fill(spikeColor.startsWith('#') ? spikeColor : color)
     }
 
     // Tail
     const tailX = x - bodyWidth * 0.5
     const tailY = y
-    this.playerGraphics.moveTo(tailX, tailY)
-    this.playerGraphics.lineTo(tailX - 20 * scale, tailY + 5 * scale)
-    this.playerGraphics.lineTo(tailX - 15 * scale, tailY - 5 * scale)
-    this.playerGraphics.fill(color)
+    g.moveTo(tailX, tailY)
+    g.lineTo(tailX - 20 * scale, tailY + 5 * scale)
+    g.lineTo(tailX - 15 * scale, tailY - 5 * scale)
+    g.fill(color)
 
     // Eye
-    this.playerGraphics.circle(headX + 4 * scale, headY - 3 * scale, 3 * scale)
-    this.playerGraphics.fill('#000000')
-    this.playerGraphics.circle(headX + 5 * scale, headY - 4 * scale, 1 * scale)
-    this.playerGraphics.fill('#FFFFFF')
+    g.circle(headX + 4 * scale, headY - 3 * scale, 3 * scale)
+    g.fill('#000000')
+    g.circle(headX + 5 * scale, headY - 4 * scale, 1 * scale)
+    g.fill('#FFFFFF')
 
     // Tiny arms
-    this.playerGraphics.ellipse(x + 10 * scale, y + 5 * scale, 4 * scale, 6 * scale)
-    this.playerGraphics.fill(color)
+    g.ellipse(x + 10 * scale, y + 5 * scale, 4 * scale, 6 * scale)
+    g.fill(color)
   }
 
-  private drawBunny(x: number, y: number, scale: number, color: string): void {
+  private drawBunny(g: Graphics, x: number, y: number, scale: number, color: string): void {
     // Body
     const bodyWidth = 25 * scale
     const bodyHeight = 20 * scale
-    this.playerGraphics.ellipse(x, y, bodyWidth / 2, bodyHeight / 2)
-    this.playerGraphics.fill(color)
+    g.ellipse(x, y, bodyWidth / 2, bodyHeight / 2)
+    g.fill(color)
 
     // Head
     const headX = x + bodyWidth * 0.2
     const headY = y - bodyHeight * 0.4
     const headRadius = 10 * scale
-    this.playerGraphics.circle(headX, headY, headRadius)
-    this.playerGraphics.fill(color)
+    g.circle(headX, headY, headRadius)
+    g.fill(color)
 
     // Ears (two tall ellipses)
     const earWidth = 5 * scale
     const earHeight = 18 * scale
-    this.playerGraphics.ellipse(headX - 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 2, earHeight / 2)
-    this.playerGraphics.fill(color)
-    this.playerGraphics.ellipse(headX + 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 2, earHeight / 2)
-    this.playerGraphics.fill(color)
+    g.ellipse(headX - 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 2, earHeight / 2)
+    g.fill(color)
+    g.ellipse(headX + 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 2, earHeight / 2)
+    g.fill(color)
 
     // Inner ears (pink)
-    this.playerGraphics.ellipse(headX - 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 3, earHeight / 3)
-    this.playerGraphics.fill('#FFB6C1')
-    this.playerGraphics.ellipse(headX + 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 3, earHeight / 3)
-    this.playerGraphics.fill('#FFB6C1')
+    g.ellipse(headX - 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 3, earHeight / 3)
+    g.fill('#FFB6C1')
+    g.ellipse(headX + 5 * scale, headY - headRadius - earHeight / 2 + 3 * scale, earWidth / 3, earHeight / 3)
+    g.fill('#FFB6C1')
 
     // Nose (pink)
-    this.playerGraphics.circle(headX + headRadius - 2 * scale, headY + 2 * scale, 3 * scale)
-    this.playerGraphics.fill('#FFB6C1')
+    g.circle(headX + headRadius - 2 * scale, headY + 2 * scale, 3 * scale)
+    g.fill('#FFB6C1')
 
     // Eye
-    this.playerGraphics.circle(headX + 3 * scale, headY - 2 * scale, 3 * scale)
-    this.playerGraphics.fill('#000000')
-    this.playerGraphics.circle(headX + 4 * scale, headY - 3 * scale, 1 * scale)
-    this.playerGraphics.fill('#FFFFFF')
+    g.circle(headX + 3 * scale, headY - 2 * scale, 3 * scale)
+    g.fill('#000000')
+    g.circle(headX + 4 * scale, headY - 3 * scale, 1 * scale)
+    g.fill('#FFFFFF')
 
     // Fluffy tail
-    this.playerGraphics.circle(x - bodyWidth * 0.4, y, 6 * scale)
-    this.playerGraphics.fill('#FFFFFF')
+    g.circle(x - bodyWidth * 0.4, y, 6 * scale)
+    g.fill('#FFFFFF')
   }
 
   private drawCustomShape(
@@ -477,12 +562,40 @@ export class GameRenderer {
   }
 
   destroy(): void {
-    if (this.initialized) {
-      if (this.unsubscribe) {
-        this.unsubscribe()
-      }
-      this.app.destroy(true)
-      this.initialized = false
+    this.isDestroyed = true
+
+    // Remove keyboard listeners
+    if (this.onKeyDown) {
+      window.removeEventListener('keydown', this.onKeyDown)
+      this.onKeyDown = null
     }
+    if (this.onKeyUp) {
+      window.removeEventListener('keyup', this.onKeyUp)
+      this.onKeyUp = null
+    }
+
+    // Unsubscribe from store
+    if (this.unsubscribe) {
+      this.unsubscribe()
+      this.unsubscribe = null
+    }
+
+    // Destroy PixiJS app
+    if (this.app) {
+      try {
+        this.app.destroy(true)
+      } catch (e) {
+        // Ignore destroy errors during unmount
+      }
+      this.app = null
+    }
+
+    // Clear all references
+    this.worldContainer = null
+    this.terrainGraphics = null
+    this.boundaryGraphics = null
+    this.entityContainer = null
+    this.playerContainer = null
+    this.playerGraphics = null
   }
 }

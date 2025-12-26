@@ -11,13 +11,13 @@ export function HUD() {
   const hasHalfHeart = (health % 20) >= 10
 
   return (
-    <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start pointer-events-none">
+    <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-start pointer-events-none">
       {/* Health Hearts */}
-      <div className="flex gap-1">
+      <div className="flex gap-2">
         {Array.from({ length: totalHearts }).map((_, i) => (
           <span
             key={i}
-            className="text-2xl"
+            className="text-4xl"
             style={{
               opacity: i < fullHearts ? 1 : (i === fullHearts && hasHalfHeart) ? 0.5 : 0.2,
             }}
@@ -28,8 +28,8 @@ export function HUD() {
       </div>
 
       {/* Points */}
-      <div className="bg-amber-100 border-2 border-amber-600 rounded-lg px-4 py-2">
-        <span className="text-amber-800 font-bold text-xl">⭐ {points}</span>
+      <div className="bg-amber-100 border-3 border-amber-600 rounded-xl px-5 py-3">
+        <span className="text-amber-800 font-bold text-2xl">⭐ {points}</span>
       </div>
     </div>
   )

@@ -1,6 +1,52 @@
 import { useState, useCallback } from 'react'
 import { speechRecognition } from '../services/speechRecognition'
 
+// Audio context for sound effects
+let audioContext: AudioContext | null = null
+
+function getAudioContext(): AudioContext {
+  if (!audioContext) {
+    audioContext = new AudioContext()
+  }
+  return audioContext
+}
+
+// Play a beep sound
+function playBeep(frequency: number, duration: number, type: OscillatorType = 'sine') {
+  try {
+    const ctx = getAudioContext()
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+
+    oscillator.type = type
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime)
+
+    // Fade out to avoid clicks
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration)
+
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + duration)
+  } catch (e) {
+    // Ignore audio errors
+  }
+}
+
+// Start listening sound - ascending two-tone "ding"
+function playStartSound() {
+  playBeep(600, 0.1)
+  setTimeout(() => playBeep(800, 0.15), 100)
+}
+
+// Stop listening sound - descending two-tone "dong"
+function playStopSound() {
+  playBeep(600, 0.1)
+  setTimeout(() => playBeep(400, 0.2), 100)
+}
+
 interface VoiceButtonProps {
   onResult: (transcript: string) => void
   onError?: (error: string) => void
@@ -25,6 +71,7 @@ export function VoiceButton({ onResult, onError, onListeningChange, disabled }: 
 
     if (isListening) {
       speechRecognition.stopListening()
+      playStopSound()
       updateListening(false)
       return
     }
@@ -33,10 +80,12 @@ export function VoiceButton({ onResult, onError, onListeningChange, disabled }: 
 
     const started = speechRecognition.startListening(
       (transcript) => {
+        playStopSound()
         updateListening(false)
         onResult(transcript)
       },
       (error) => {
+        playStopSound()
         updateListening(false)
         setHasError(true)
         onError?.(error)
@@ -44,11 +93,13 @@ export function VoiceButton({ onResult, onError, onListeningChange, disabled }: 
         setTimeout(() => setHasError(false), 2000)
       },
       () => {
+        playStopSound()
         updateListening(false)
       }
     )
 
     if (started) {
+      playStartSound()
       updateListening(true)
     }
   }, [isListening, onResult, onError, updateListening])
@@ -61,7 +112,7 @@ export function VoiceButton({ onResult, onError, onListeningChange, disabled }: 
       onClick={handleClick}
       disabled={isDisabled}
       className={`
-        p-3 rounded-full transition-all duration-200
+        p-4 rounded-full transition-all duration-200
         ${isDisabled
           ? 'bg-gray-300 cursor-not-allowed'
           : isListening
@@ -84,7 +135,7 @@ export function VoiceButton({ onResult, onError, onListeningChange, disabled }: 
         // Listening icon (filled mic with waves)
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
+          className="h-8 w-8"
           viewBox="0 0 24 24"
           fill="currentColor"
         >
@@ -95,7 +146,7 @@ export function VoiceButton({ onResult, onError, onListeningChange, disabled }: 
         // Mic icon
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
+          className="h-8 w-8"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

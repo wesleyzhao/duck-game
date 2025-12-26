@@ -84,6 +84,14 @@ export class SandboxAPI implements GameSandboxAPI {
     )
   }
 
+  // Find ALL entities by name (case-insensitive)
+  findAllByName(name: string): EntityConfig[] {
+    const lowerName = name.toLowerCase()
+    return this.getAllEntities().filter(
+      (e) => e.name.toLowerCase() === lowerName
+    )
+  }
+
   // Convenience: make an entity bouncy by name
   makeBouncy(name: string): boolean {
     const entity = this.findByName(name)

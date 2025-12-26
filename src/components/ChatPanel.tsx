@@ -1,21 +1,41 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { executeSandboxedCode } from '../sandbox/executor'
 import { useHistoryStore } from '../store/historyStore'
 import { callLLM, buildGameContext } from '../services/llmService'
+import { speak, stopSpeaking } from '../services/voiceService'
 import { VoiceButton } from './VoiceButton'
+
+const WELCOME_MESSAGE = "Hi! I'm DuckWorld! Try saying 'make the grass purple' or click the mic to speak!"
 
 export function ChatPanel() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'game'; content: string }>>([
-    { role: 'game', content: "Hi! I'm DuckWorld! Try saying 'make the grass purple' or click the mic to speak!" },
+    { role: 'game', content: WELCOME_MESSAGE },
   ])
 
   const { undo, redo, canUndo, canRedo, addEntry } = useHistoryStore()
 
+  // Speak welcome message on mount
+  useEffect(() => {
+    // Speak welcome after a short delay
+    const timer = setTimeout(() => {
+      speak(WELCOME_MESSAGE)
+    }, 500)
+
+    return () => {
+      clearTimeout(timer)
+      stopSpeaking()
+    }
+  }, [])
+
   const addMessage = useCallback((role: 'user' | 'game', content: string) => {
     setMessages((prev) => [...prev, { role, content }])
+    // Speak game responses out loud
+    if (role === 'game') {
+      speak(content)
+    }
   }, [])
 
   const processMessage = useCallback(async (userInput: string) => {
@@ -109,48 +129,48 @@ export function ChatPanel() {
   }, [])
 
   return (
-    <div className="w-80 bg-amber-50 border-4 border-amber-600 rounded-lg flex flex-col h-96">
+    <div className="w-[420px] bg-amber-50 border-4 border-amber-600 rounded-2xl flex flex-col h-[550px]">
       {/* Header */}
-      <div className="bg-amber-600 text-white px-3 py-2 font-bold">
+      <div className="bg-amber-600 text-white px-5 py-4 font-bold text-2xl rounded-t-xl">
         🦆 Talk to DuckWorld!
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`p-2 rounded-lg text-sm ${
+            className={`p-4 rounded-xl text-xl leading-relaxed ${
               msg.role === 'user'
-                ? 'bg-blue-100 text-blue-800 ml-4'
-                : 'bg-amber-100 text-amber-800 mr-4'
+                ? 'bg-blue-100 text-blue-800 ml-6'
+                : 'bg-amber-100 text-amber-800 mr-6'
             }`}
           >
             {msg.content}
           </div>
         ))}
         {isLoading && (
-          <div className="bg-amber-100 text-amber-800 mr-4 p-2 rounded-lg text-sm animate-pulse">
+          <div className="bg-amber-100 text-amber-800 mr-6 p-4 rounded-xl text-xl animate-pulse">
             Thinking... 🦆
           </div>
         )}
         {isListening && (
-          <div className="bg-red-100 text-red-800 mr-4 p-2 rounded-lg text-sm animate-pulse">
+          <div className="bg-red-100 text-red-800 mr-6 p-4 rounded-xl text-xl animate-pulse">
             🎤 Listening...
           </div>
         )}
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-2 border-t border-amber-300">
+      <form onSubmit={handleSubmit} className="p-4 border-t-2 border-amber-300">
         <div className="flex gap-2 items-center">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type or click mic to speak..."
+            placeholder="Type or click mic..."
             disabled={isLoading || isListening}
-            className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:border-amber-500 disabled:bg-gray-100"
+            className="flex-1 min-w-0 px-4 py-3 border-2 border-amber-300 rounded-xl text-xl focus:outline-none focus:border-amber-500 disabled:bg-gray-100"
           />
           <VoiceButton
             onResult={handleVoiceResult}
@@ -161,7 +181,7 @@ export function ChatPanel() {
           <button
             type="submit"
             disabled={isLoading || isListening}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:bg-amber-400"
+            className="px-4 py-3 bg-amber-600 text-white text-2xl rounded-xl hover:bg-amber-700 disabled:bg-amber-400 flex-shrink-0"
           >
             {isLoading ? '...' : '💬'}
           </button>

@@ -3,7 +3,6 @@ import { GameRenderer } from '../game/GameRenderer'
 
 export function GameCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const rendererRef = useRef<GameRenderer | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -12,18 +11,24 @@ export function GameCanvas() {
     containerRef.current.innerHTML = ''
 
     const renderer = new GameRenderer()
-    rendererRef.current = renderer
+    let mounted = true
 
-    let cancelled = false
-
-    renderer.init(containerRef.current).then(() => {
-      if (cancelled) {
-        renderer.destroy()
+    const initRenderer = async () => {
+      try {
+        await renderer.init(containerRef.current!)
+        // If unmounted during init, clean up
+        if (!mounted) {
+          renderer.destroy()
+        }
+      } catch (error) {
+        console.error('Failed to initialize renderer:', error)
       }
-    })
+    }
+
+    initRenderer()
 
     return () => {
-      cancelled = true
+      mounted = false
       renderer.destroy()
     }
   }, [])
