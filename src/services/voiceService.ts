@@ -10,7 +10,7 @@ interface VoiceConfig {
 // Default config - can be changed at runtime
 let currentConfig: VoiceConfig = {
   provider: 'elevenlabs', // Default to ElevenLabs if API key is available
-  elevenLabsVoiceId: 'EXAVITQu4vr4xnSDxMaL', // "Sarah" - warm, friendly female voice
+  elevenLabsVoiceId: 'jBpfuIE2acCO8z3wKNLl', // "Lily" - warm, friendly British female voice
 }
 
 // Audio element for ElevenLabs playback
@@ -78,11 +78,11 @@ async function speakWithElevenLabs(text: string, apiKey: string): Promise<void> 
         text,
         model_id: 'eleven_multilingual_v2', // Higher quality, better pacing
         voice_settings: {
-          stability: 0.6, // Higher stability = more consistent pacing
-          similarity_boost: 0.75,
-          style: 0.4, // Lower style = more natural, less rushed
+          stability: 0.5, // Balanced for natural variation
+          similarity_boost: 0.8,
+          style: 0.6, // More expressive and friendly
           use_speaker_boost: true,
-          speed: 0.92, // Slightly slower than normal (1.0)
+          speed: 0.95, // Slightly slower than normal
         },
       }),
     }
@@ -133,11 +133,10 @@ function speakWithBrowser(text: string): void {
 }
 
 // Popular ElevenLabs voice IDs for reference:
+// - jBpfuIE2acCO8z3wKNLl: Lily (warm British female) - CURRENT
 // - EXAVITQu4vr4xnSDxMaL: Sarah (friendly female)
 // - 21m00Tcm4TlvDq8ikWAM: Rachel (calm female)
 // - AZnzlk1XvdvUeBnXmlld: Domi (young female)
 // - MF3mGyEYCl7XYWbV9V6O: Elli (young female)
 // - TxGEqnHWrfWFTfGW9XjX: Josh (young male)
-// - VR6AewLTigWG4xSOukaG: Arnold (deep male)
-// - pNInz6obpgDQGcFmaJgB: Adam (deep male)
 // - yoZ06aMxZJJ28mfd3POQ: Sam (young male)

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { MathProblem, generateLocalMathProblem } from '../services/mathService'
 import { useGameStore } from './gameStore'
 import { speak } from '../services/voiceService'
+import { playMathTreeSound, playCorrectSound, playWrongSound } from '../services/soundEffects'
 
 // Local encouraging feedback for wrong answers (faster than LLM)
 const wrongAnswerFeedback = [
@@ -25,6 +26,7 @@ interface MathStore {
   isLoading: boolean
   attempts: number
   lastFeedback: string | null
+  showCelebration: boolean
 
   // Actions
   triggerMathProblem: (treeId: string) => Promise<void>
@@ -39,6 +41,7 @@ export const useMathStore = create<MathStore>((set, get) => ({
   isLoading: false,
   attempts: 0,
   lastFeedback: null,
+  showCelebration: false,
 
   triggerMathProblem: async (treeId: string) => {
     const state = get()
@@ -64,14 +67,19 @@ export const useMathStore = create<MathStore>((set, get) => ({
       lastFeedback: null
     })
 
+    // Play discovery sound
+    playMathTreeSound()
+
     // Always use local generation for reliability (LLM can be slow/unreliable)
     // This ensures unique random problems each time
     const problem = generateLocalMathProblem()
 
     set({ currentProblem: problem, isLoading: false })
 
-    // Speak the problem
-    speak(problem.speakText)
+    // Speak the problem after a short delay for the sound effect
+    setTimeout(() => {
+      speak(problem.speakText)
+    }, 400)
   },
 
   submitAnswer: async (answer: number) => {

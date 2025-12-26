@@ -17,15 +17,9 @@ export function ChatPanel() {
 
   const { undo, redo, canUndo, canRedo, addEntry } = useHistoryStore()
 
-  // Speak welcome message on mount
+  // Clean up speech on unmount
   useEffect(() => {
-    // Speak welcome after a short delay
-    const timer = setTimeout(() => {
-      speak(WELCOME_MESSAGE)
-    }, 500)
-
     return () => {
-      clearTimeout(timer)
       stopSpeaking()
     }
   }, [])
