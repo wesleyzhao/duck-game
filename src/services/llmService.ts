@@ -111,6 +111,35 @@ Code:
 game.createEntity({name: "Cloud", x: 200, y: 100, width: 80, height: 40, shape: "ellipse", color: "white"})
 game.makeFloat("Cloud")
 game.say("A fluffy cloud drifts through the sky!")
+
+User: "turn me into a robot"
+Code:
+game.defineShape("robot", [
+  {type: "rect", x: 0, y: 0, width: 30, height: 35, color: "#888888"},
+  {type: "rect", x: 0, y: -22, width: 20, height: 18, color: "#AAAAAA"},
+  {type: "circle", x: -5, y: -24, radius: 3, color: "#00FF00"},
+  {type: "circle", x: 5, y: -24, radius: 3, color: "#00FF00"},
+  {type: "rect", x: 0, y: -14, width: 8, height: 2, color: "#333333"},
+  {type: "rect", x: -12, y: -32, width: 4, height: 8, color: "#666666"},
+  {type: "rect", x: 12, y: -32, width: 4, height: 8, color: "#666666"}
+])
+game.setPlayerAppearance({shape: "robot"})
+game.say("Beep boop! You're now a cool robot!")
+
+User: "turn me into a cat"
+Code:
+game.defineShape("cat", [
+  {type: "ellipse", x: 0, y: 5, rx: 18, ry: 14, color: "#FFA500"},
+  {type: "circle", x: 8, y: -12, radius: 12, color: "#FFA500"},
+  {type: "triangle", x: 0, y: -28, width: 10, height: 12, color: "#FFA500"},
+  {type: "triangle", x: 14, y: -28, width: 10, height: 12, color: "#FFA500"},
+  {type: "circle", x: 4, y: -14, radius: 3, color: "#000000"},
+  {type: "circle", x: 12, y: -14, radius: 3, color: "#000000"},
+  {type: "triangle", x: 8, y: -8, width: 5, height: 4, color: "#FFB6C1"},
+  {type: "ellipse", x: -20, y: 8, rx: 12, ry: 4, color: "#FFA500"}
+])
+game.setPlayerAppearance({shape: "cat"})
+game.say("Meow! You're now an adorable kitty cat!")
 `
 
 export interface LLMResponse {
