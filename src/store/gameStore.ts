@@ -39,6 +39,7 @@ interface GameStore {
 
   // Behavior actions
   addBehavior: (entityId: string, behavior: BehaviorConfig) => void
+  updateBehavior: (entityId: string, behaviorType: string, updates: Partial<BehaviorConfig>) => void
   removeBehavior: (entityId: string, behaviorType: string) => void
 
   // Custom shape actions
@@ -393,6 +394,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       entities: state.entities.map((e) =>
         e.id === entityId
           ? { ...e, behaviors: [...e.behaviors, behavior] }
+          : e
+      ),
+    })),
+
+  updateBehavior: (entityId, behaviorType, updates) =>
+    set((state) => ({
+      entities: state.entities.map((e) =>
+        e.id === entityId
+          ? {
+              ...e,
+              behaviors: e.behaviors.map((b) =>
+                b.type === behaviorType ? { ...b, ...updates } : b
+              ),
+            }
           : e
       ),
     })),

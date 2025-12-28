@@ -322,6 +322,27 @@ export class SandboxAPI implements GameSandboxAPI {
     return true
   }
 
+  updateBehavior(entityId: string, behaviorType: string, updates: Partial<BehaviorConfig>): boolean {
+    const entity = this.getEntity(entityId)
+    if (!entity) return false
+
+    const behavior = entity.behaviors.find((b) => b.type === behaviorType)
+    if (!behavior) return false
+
+    const prevBehavior = { ...behavior }
+
+    useGameStore.getState().updateBehavior(entityId, behaviorType, updates)
+
+    this.changes.push({
+      type: 'updateBehavior',
+      description: `Updated ${behaviorType} on ${entity.name}`,
+      forward: () => useGameStore.getState().updateBehavior(entityId, behaviorType, updates),
+      reverse: () => useGameStore.getState().updateBehavior(entityId, behaviorType, prevBehavior),
+    })
+
+    return true
+  }
+
   removeBehavior(entityId: string, behaviorType: string): boolean {
     const entity = this.getEntity(entityId)
     if (!entity) return false
@@ -339,6 +360,39 @@ export class SandboxAPI implements GameSandboxAPI {
     })
 
     return true
+  }
+
+  // --- Convenience methods for common operations ---
+
+  // Slow down or speed up an entity (affects bounce behavior speed)
+  setSpeed(name: string, speed: number): boolean {
+    const entity = this.findByName(name)
+    if (!entity) return false
+    return this.updateBehavior(entity.id, 'bounce', { speed })
+  }
+
+  // Slow down all enemies (turtles)
+  slowEnemies(speed: number = 0.5): number {
+    const enemies = this.getAllEntities().filter(e => e.isEnemy)
+    let count = 0
+    for (const enemy of enemies) {
+      if (this.updateBehavior(enemy.id, 'bounce', { speed })) {
+        count++
+      }
+    }
+    return count
+  }
+
+  // Speed up all enemies
+  speedUpEnemies(speed: number = 2): number {
+    const enemies = this.getAllEntities().filter(e => e.isEnemy)
+    let count = 0
+    for (const enemy of enemies) {
+      if (this.updateBehavior(enemy.id, 'bounce', { speed })) {
+        count++
+      }
+    }
+    return count
   }
 
   // --- Custom Shape Methods ---

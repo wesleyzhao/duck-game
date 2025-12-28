@@ -19,6 +19,9 @@ const SYSTEM_PROMPT = `You are the game engine for DuckWorld, a magical game for
 - game.deleteEntity(id) - Remove entity
 - game.makeBouncy(name) - Make entity bounce around
 - game.makeFloat(name) - Make entity float up and down
+- game.setSpeed(name, speed) - Change how fast an entity moves (default: 1.5, use 0.3-0.5 for slow, 2-3 for fast)
+- game.slowEnemies(speed?) - Slow down ALL enemies/turtles (default speed: 0.5)
+- game.speedUpEnemies(speed?) - Speed up ALL enemies/turtles (default speed: 2)
 
 ### Player Methods
 - game.getPlayer() - Returns {x, y, health, maxHealth, points, appearance}
@@ -158,6 +161,16 @@ game.defineShape("star", [
 ])
 game.createEntity({name: "Star", x: game.random(100, 700), y: game.random(50, 150), width: 40, height: 40, shape: "star", color: "#FFD700"})
 game.say("A golden star appears in the sky!")
+
+User: "slow down the turtles"
+Code:
+const count = game.slowEnemies(0.3)
+game.say("Whew! I made " + count + " turtles super slow! They're moving like sleepy snails now!")
+
+User: "make the turtles faster"
+Code:
+const count = game.speedUpEnemies(2.5)
+game.say("Zoom zoom! The " + count + " turtles are now speedy!")
 `
 
 export interface LLMResponse {

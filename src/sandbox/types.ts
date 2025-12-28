@@ -65,7 +65,13 @@ export interface GameSandboxAPI {
 
   // Behavior methods
   addBehavior(entityId: string, behavior: BehaviorConfig): boolean
+  updateBehavior(entityId: string, behaviorType: string, updates: Partial<BehaviorConfig>): boolean
   removeBehavior(entityId: string, behaviorType: string): boolean
+
+  // Speed/enemy convenience methods
+  setSpeed(name: string, speed: number): boolean
+  slowEnemies(speed?: number): number
+  speedUpEnemies(speed?: number): number
 
   // Custom shape methods
   defineShape(name: string, parts: ShapePrimitive[]): void
