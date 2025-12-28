@@ -62,3 +62,10 @@ export function playWrongSound() {
   playTone(330, 0.15, 'triangle', 0.2) // E4
   setTimeout(() => playTone(277, 0.2, 'triangle', 0.15), 120) // C#4
 }
+
+// Hurt by enemy - quick descending "ouch" sound
+export function playHurtSound() {
+  playTone(440, 0.08, 'sawtooth', 0.25) // A4
+  setTimeout(() => playTone(330, 0.08, 'sawtooth', 0.2), 60) // E4
+  setTimeout(() => playTone(220, 0.15, 'sawtooth', 0.15), 120) // A3
+}

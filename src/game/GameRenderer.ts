@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore'
 import { useMathStore } from '../store/mathStore'
 import { useLevelStore } from '../store/levelStore'
 import { useTimerStore } from '../store/timerStore'
+import { playHurtSound } from '../services/soundEffects'
 import { Accessory } from '../config/levels'
 import { EntityConfig, ShapePrimitive } from '../types/game'
 
@@ -35,7 +36,7 @@ export class GameRenderer {
 
   // Input state
   private keysPressed = new Set<string>()
-  private readonly MOVE_SPEED = 8
+  private readonly MOVE_SPEED = 12  // Faster duck movement
 
   // Keyboard event handlers (stored for cleanup)
   private onKeyDown: ((e: KeyboardEvent) => void) | null = null
@@ -163,6 +164,9 @@ export class GameRenderer {
 
     // Check for math tree collisions
     this.checkMathTreeCollision()
+
+    // Check for enemy collisions
+    this.checkEnemyCollision()
 
     // Process entity behaviors
     this.processBehaviors()
@@ -341,6 +345,51 @@ export class GameRenderer {
     }
   }
 
+  private checkEnemyCollision(): void {
+    const gameStore = useGameStore.getState()
+    const { player, entities } = gameStore
+
+    // Don't check if invincible
+    if (gameStore.isInvincible()) return
+
+    // Don't check if a math problem is active (player is "safe" while solving)
+    if (useMathStore.getState().isActive) return
+
+    const playerRadius = 20 // Collision radius for enemies
+
+    for (const entity of entities) {
+      // Only check enemy entities (turtles)
+      if (!entity.isEnemy) continue
+
+      // Check distance to entity center
+      const entityCenterX = entity.x + entity.width / 2
+      const entityCenterY = entity.y + entity.height / 2
+      const dx = player.x - entityCenterX
+      const dy = player.y - entityCenterY
+      const distance = Math.sqrt(dx * dx + dy * dy)
+
+      // Collision if close enough
+      const collisionDistance = Math.max(entity.width, entity.height) / 2 + playerRadius
+
+      if (distance < collisionDistance) {
+        // Hit by enemy!
+        playHurtSound()
+
+        // Lose a life
+        gameStore.loseLife()
+
+        // Reset duck to center
+        gameStore.teleportPlayer(1000, 700)
+
+        // Start invincibility (1.5 seconds)
+        gameStore.setInvincible(1500)
+
+        // Game over is handled by GameOverOverlay watching the store
+        break
+      }
+    }
+  }
+
   private renderTerrain(): void {
     if (!this.terrainGraphics) return
 
@@ -371,7 +420,8 @@ export class GameRenderer {
   private renderPlayer(): void {
     if (!this.playerGraphics) return
 
-    const { player, customShapes } = useGameStore.getState()
+    const gameStore = useGameStore.getState()
+    const { player, customShapes } = gameStore
     const { x, y, appearance } = player
     // Use level duck size, with breath animation
     const levelDuckSize = useLevelStore.getState().getDuckSize()
@@ -388,6 +438,14 @@ export class GameRenderer {
     const g = this.playerGraphics
 
     g.clear()
+
+    // Flash effect during invincibility (blink at 10Hz)
+    if (gameStore.isInvincible()) {
+      const flash = Math.floor(this.animationTime * 10) % 2 === 0
+      g.alpha = flash ? 0.3 : 1.0
+    } else {
+      g.alpha = 1.0
+    }
 
     // Check for custom shape first
     const customShape = customShapes.get(appearance.shape.toLowerCase())

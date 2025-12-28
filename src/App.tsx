@@ -4,6 +4,7 @@ import { HUD } from './components/HUD'
 import { ChatPanel } from './components/ChatPanel'
 import { MathProblemModal } from './components/MathProblemModal'
 import { LevelCompleteOverlay } from './components/LevelCompleteOverlay'
+import { GameOverOverlay } from './components/GameOverOverlay'
 import { useLevelStore } from './store/levelStore'
 import { useTimerStore } from './store/timerStore'
 import { useGameStore } from './store/gameStore'
@@ -69,6 +70,7 @@ function App() {
       <ChatPanel />
       <MathProblemModal />
       <LevelCompleteOverlay />
+      <GameOverOverlay />
     </div>
   )
 }

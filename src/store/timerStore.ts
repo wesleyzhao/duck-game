@@ -51,12 +51,10 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 }))
 
-// Helper function to format time as MM:SS.s
+// Helper function to format time as M:SS
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  const tenths = Math.floor((secs % 1) * 10)
-  const wholeSecs = Math.floor(secs)
+  const wholeSecs = Math.floor(seconds % 60)
 
-  return `${mins}:${wholeSecs.toString().padStart(2, '0')}.${tenths}`
+  return `${mins}:${wholeSecs.toString().padStart(2, '0')}`
 }
