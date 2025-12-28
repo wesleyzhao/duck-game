@@ -183,8 +183,18 @@ export class GameRenderer {
     this.renderEntities()
     this.renderPlayer()
 
+    // Update sky color (in case it changed via sandbox)
+    this.updateSkyColor()
+
     // Update camera to follow player
     this.updateCamera()
+  }
+
+  private updateSkyColor(): void {
+    if (!this.app) return
+    const { world } = useGameStore.getState()
+    // Update background color if it changed
+    this.app.renderer.background.color = world.skyColor
   }
 
   private updateCamera(): void {
