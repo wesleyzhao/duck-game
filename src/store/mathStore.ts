@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { MathProblem, generateMathProblemWithContext } from '../services/mathService'
+import { MathProblem } from '../services/mathService'
 import { useGameStore } from './gameStore'
 import { useQuestionHistoryStore } from './questionHistoryStore'
 import { useLevelStore } from './levelStore'
@@ -75,16 +75,12 @@ export const useMathStore = create<MathStore>((set, get) => ({
     // Play discovery sound
     playMathTreeSound()
 
-    // Get current level and difficulty from levelStore
+    // Get current level from levelStore
     const levelState = useLevelStore.getState()
     const currentLevel = levelState.currentLevel
-    const difficulty = levelState.getLevelConfig().difficulty
 
-    // Get history context for LLM
-    const historyContext = useQuestionHistoryStore.getState().getHistoryForLLM()
-
-    // Generate problem using LLM with context (falls back to local if API unavailable)
-    const problem = await generateMathProblemWithContext(difficulty, historyContext)
+    // Get pre-generated question (instant, no waiting!)
+    const problem = levelState.getNextQuestion()
 
     // Generate unique question ID and add to history
     const questionId = `math-${treeId}-${Date.now()}`

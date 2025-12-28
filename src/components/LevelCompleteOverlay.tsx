@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLevelStore } from '../store/levelStore'
 import { useGameStore } from '../store/gameStore'
-import { useQuestionHistoryStore } from '../store/questionHistoryStore'
-import { generateMathProblemWithContext } from '../services/mathService'
 import { speak } from '../services/voiceService'
 
 export function LevelCompleteOverlay() {
@@ -27,20 +25,14 @@ export function LevelCompleteOverlay() {
       // Wait for celebration, then advance level
       setTimeout(async () => {
         if (currentLevel < 3) {
-          // Prepare next level (pre-generate a problem in background for faster first interaction)
-          const nextLevelConfig = useLevelStore.getState().getLevelConfig()
-          const historyContext = useQuestionHistoryStore.getState().getHistoryForLLM()
-
-          // Pre-warm the LLM (optional, just logs)
-          generateMathProblemWithContext(nextLevelConfig.difficulty, historyContext)
-            .then(() => console.log('Pre-generated problem for next level'))
-            .catch(() => console.log('Will generate problem on demand'))
-
           // Reset trees for new level
           regenerateTreesForLevel(currentLevel + 1)
 
           // Advance to next level
           useLevelStore.getState().advanceLevel()
+
+          // Pre-generate all questions for the new level
+          await useLevelStore.getState().generateQuestionsForLevel()
         }
 
         // Hide the overlay

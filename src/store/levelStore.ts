@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { LevelConfig, getLevelConfig, Accessory } from '../config/levels'
+import { MathProblem, generateMathProblemWithContext, generateLocalMathProblem } from '../services/mathService'
+import { useQuestionHistoryStore } from './questionHistoryStore'
 
 interface LevelStore {
   // State
@@ -7,6 +9,8 @@ interface LevelStore {
   treesSolved: number
   levelComplete: boolean
   showLevelTransition: boolean
+  preGeneratedQuestions: MathProblem[]
+  isGeneratingQuestions: boolean
 
   // Computed getters
   getLevelConfig: () => LevelConfig
@@ -22,6 +26,10 @@ interface LevelStore {
   advanceLevel: () => void
   resetLevel: () => void
   setShowLevelTransition: (show: boolean) => void
+
+  // Question pre-generation
+  generateQuestionsForLevel: () => Promise<void>
+  getNextQuestion: () => MathProblem
 }
 
 export const useLevelStore = create<LevelStore>((set, get) => ({
@@ -29,6 +37,8 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
   treesSolved: 0,
   levelComplete: false,
   showLevelTransition: false,
+  preGeneratedQuestions: [],
+  isGeneratingQuestions: false,
 
   getLevelConfig: () => getLevelConfig(get().currentLevel),
 
@@ -67,6 +77,7 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
         treesSolved: 0,
         levelComplete: false,
         showLevelTransition: false,
+        preGeneratedQuestions: [], // Clear for new level
       })
     }
   },
@@ -77,10 +88,60 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
       treesSolved: 0,
       levelComplete: false,
       showLevelTransition: false,
+      preGeneratedQuestions: [],
     })
   },
 
   setShowLevelTransition: (show) => {
     set({ showLevelTransition: show })
+  },
+
+  generateQuestionsForLevel: async () => {
+    const state = get()
+    if (state.isGeneratingQuestions) return
+
+    set({ isGeneratingQuestions: true })
+
+    const config = getLevelConfig(state.currentLevel)
+    const historyContext = useQuestionHistoryStore.getState().getHistoryForLLM()
+    const questions: MathProblem[] = []
+
+    // Generate all questions for this level
+    for (let i = 0; i < config.treesRequired; i++) {
+      try {
+        // Try LLM first, fall back to local
+        const problem = await generateMathProblemWithContext(config.difficulty, historyContext)
+        questions.push(problem)
+      } catch {
+        // Fallback to local generation
+        questions.push(generateLocalMathProblem(config.difficulty))
+      }
+    }
+
+    set({
+      preGeneratedQuestions: questions,
+      isGeneratingQuestions: false,
+    })
+
+    console.log(`Pre-generated ${questions.length} questions for level ${state.currentLevel}`)
+  },
+
+  getNextQuestion: () => {
+    const state = get()
+    if (state.preGeneratedQuestions.length === 0) {
+      // Fallback if no pre-generated questions available
+      const config = getLevelConfig(state.currentLevel)
+      return generateLocalMathProblem(config.difficulty)
+    }
+
+    // Get the next question (based on trees solved)
+    const questionIndex = state.treesSolved
+    if (questionIndex < state.preGeneratedQuestions.length) {
+      return state.preGeneratedQuestions[questionIndex]
+    }
+
+    // Fallback if we've used all pre-generated questions
+    const config = getLevelConfig(state.currentLevel)
+    return generateLocalMathProblem(config.difficulty)
   },
 }))
