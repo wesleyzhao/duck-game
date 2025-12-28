@@ -130,6 +130,14 @@ export const useMathStore = create<MathStore>((set, get) => ({
       // Mark tree as solved
       useGameStore.getState().updateEntity(currentTreeId, { mathSolved: true })
 
+      // Increment trees solved and check level completion
+      useLevelStore.getState().incrementTreesSolved()
+      const levelComplete = useLevelStore.getState().checkLevelComplete()
+      if (levelComplete) {
+        // Show level transition overlay
+        useLevelStore.getState().setShowLevelTransition(true)
+      }
+
       // Add points
       useGameStore.getState().modifyPoints(10)
 

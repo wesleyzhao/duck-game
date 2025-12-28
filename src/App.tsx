@@ -2,6 +2,7 @@ import { GameCanvas } from './components/GameCanvas'
 import { HUD } from './components/HUD'
 import { ChatPanel } from './components/ChatPanel'
 import { MathProblemModal } from './components/MathProblemModal'
+import { LevelCompleteOverlay } from './components/LevelCompleteOverlay'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       </div>
       <ChatPanel />
       <MathProblemModal />
+      <LevelCompleteOverlay />
     </div>
   )
 }

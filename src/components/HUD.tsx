@@ -1,4 +1,5 @@
 import { useGameStore } from '../store/gameStore'
+import { useLevelStore } from '../store/levelStore'
 import { useEffect, useRef, useState } from 'react'
 
 interface FlyingCake {
@@ -14,6 +15,9 @@ export function HUD() {
   const health = useGameStore((state) => state.player.health)
   const maxHealth = useGameStore((state) => state.player.maxHealth)
   const points = useGameStore((state) => state.player.points)
+  const currentLevel = useLevelStore((state) => state.currentLevel)
+  const treesSolved = useLevelStore((state) => state.treesSolved)
+  const treesRequired = useLevelStore((state) => state.getTreesRequired())
 
   const [flyingCakes, setFlyingCakes] = useState<FlyingCake[]>([])
   const [pointsHighlight, setPointsHighlight] = useState(false)
@@ -95,6 +99,14 @@ export function HUD() {
               ❤️
             </span>
           ))}
+        </div>
+
+        {/* Level indicator - center */}
+        <div className="bg-blue-100 border-3 border-blue-400 rounded-xl px-4 py-2 text-center">
+          <div className="text-blue-800 font-bold text-lg">Level {currentLevel}</div>
+          <div className="text-blue-600 text-sm">
+            🌳 {treesSolved}/{treesRequired}
+          </div>
         </div>
 
         {/* Points with Cake icon */}
