@@ -100,18 +100,28 @@ export function HUD() {
         {/* Points with Cake icon */}
         <div
           ref={pointsMeterRef}
-          className="bg-pink-100 border-3 border-pink-400 rounded-xl px-5 py-3 transition-all duration-200"
+          className="bg-gradient-to-br from-pink-100 to-pink-200 border-4 border-pink-400 rounded-2xl px-6 py-4 transition-all duration-200 shadow-lg"
           style={{
-            animation: flyingCakes.length > 0 ? 'pulse 0.3s ease-in-out' : 'none',
-            transform: pointsHighlight ? 'scale(1.1)' : 'scale(1)',
+            animation: pointsHighlight ? 'pointsBounce 0.5s ease-out' : 'none',
+            transform: pointsHighlight ? 'scale(1.25)' : 'scale(1)',
+            boxShadow: pointsHighlight
+              ? '0 0 30px rgba(236, 72, 153, 0.7), 0 0 60px rgba(236, 72, 153, 0.4), 0 8px 32px rgba(0,0,0,0.2)'
+              : '0 4px 15px rgba(0,0,0,0.15)',
           }}
         >
-          <span className="font-bold transition-all duration-200" style={{
-            fontSize: pointsHighlight ? '2rem' : '1.5rem',
+          <span className="font-extrabold transition-all duration-200 flex items-center gap-2" style={{
+            fontSize: pointsHighlight ? '3rem' : '2.25rem',
             color: pointsHighlight ? '#db2777' : '#be185d',
-            textShadow: pointsHighlight ? '0 0 8px rgba(219, 39, 119, 0.5)' : 'none',
+            textShadow: pointsHighlight
+              ? '0 0 20px rgba(219, 39, 119, 0.8), 0 2px 4px rgba(0,0,0,0.2)'
+              : '0 2px 4px rgba(0,0,0,0.1)',
           }}>
-            🎂 {points}
+            <span style={{
+              display: 'inline-block',
+              animation: pointsHighlight ? 'cakeWiggle 0.4s ease-in-out' : 'none',
+              fontSize: pointsHighlight ? '3.5rem' : '2.5rem',
+            }}>🎂</span>
+            <span>{points}</span>
           </span>
         </div>
       </div>
@@ -122,7 +132,7 @@ export function HUD() {
         return (
           <div
             key={cake.id}
-            className="fixed pointer-events-none text-3xl z-50"
+            className="fixed pointer-events-none text-5xl z-50"
             style={{
               left: cake.startX,
               top: cake.startY,
@@ -141,16 +151,34 @@ export function HUD() {
       <style>{`
         @keyframes flyToCake {
           0% {
-            transform: translate(0, 0) scale(1.3) rotate(0deg);
+            transform: translate(0, 0) scale(1.5) rotate(0deg);
             opacity: 1;
           }
           30% {
-            transform: translate(calc(var(--target-x) * 0.3), calc(var(--target-y) * 0.3 - 40px)) scale(1.1) rotate(calc(var(--rotation) * 0.3));
+            transform: translate(calc(var(--target-x) * 0.3), calc(var(--target-y) * 0.3 - 60px)) scale(1.2) rotate(calc(var(--rotation) * 0.3));
           }
           100% {
-            transform: translate(var(--target-x), var(--target-y)) scale(0.4) rotate(var(--rotation));
+            transform: translate(var(--target-x), var(--target-y)) scale(0.5) rotate(var(--rotation));
             opacity: 0;
           }
+        }
+
+        @keyframes pointsBounce {
+          0% { transform: scale(1); }
+          20% { transform: scale(1.35); }
+          40% { transform: scale(1.15); }
+          60% { transform: scale(1.28); }
+          80% { transform: scale(1.22); }
+          100% { transform: scale(1.25); }
+        }
+
+        @keyframes cakeWiggle {
+          0% { transform: rotate(0deg) scale(1); }
+          20% { transform: rotate(-15deg) scale(1.2); }
+          40% { transform: rotate(15deg) scale(1.15); }
+          60% { transform: rotate(-10deg) scale(1.1); }
+          80% { transform: rotate(10deg) scale(1.05); }
+          100% { transform: rotate(0deg) scale(1); }
         }
 
         @keyframes pulse {
