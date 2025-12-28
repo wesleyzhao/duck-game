@@ -11,6 +11,8 @@ const API_METHODS = [
   { name: 'game.say(message)', desc: 'Show a message' },
   { name: 'game.makeBouncy(name)', desc: 'Make object bounce' },
   { name: 'game.makeFloat(name)', desc: 'Make object float' },
+  { name: 'game.slowEnemies(speed?)', desc: 'Slow down turtles' },
+  { name: 'game.speedUpEnemies(speed?)', desc: 'Speed up turtles' },
   { name: 'game.defineShape(name, parts)', desc: 'Create custom shape' },
 ]
 
