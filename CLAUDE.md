@@ -120,5 +120,27 @@ Following `duckworld-implementation-guide.md`. Current status:
 - [x] Step 4.3: Integrate voice with ChatPanel
 - [x] Step 4.4: Handle edge cases (permissions, silence, no speech)
 
-### Phase 5: Voice Output (not started)
-### Phase 6: Polish (not started)
+### Phase 5: Voice Output ✅
+- [x] Text-to-speech for game responses (`src/services/voiceService.ts`)
+
+### Phase 6: Game Mechanics ✅
+- [x] Math problem trees with question badges
+- [x] Level system (3 levels with increasing difficulty)
+- [x] Timer display
+- [x] Lives system (5 lives, invincibility after hit)
+- [x] Enemy turtles with bounce behavior
+- [x] Game over and level complete overlays
+- [x] Sound effects (correct answer, wrong answer, hurt)
+
+### Phase 7: Code IDE Panel ✅
+- [x] CodeMirror editor with JavaScript syntax highlighting
+- [x] Voice input for code generation
+- [x] Example snippets buttons
+- [x] API Reference help tooltip
+- [x] Keyboard shortcut (Cmd/Ctrl+Enter to run)
+- [x] Sandbox API for turtle speed control (slowEnemies, speedUpEnemies)
+
+### Current Architecture Notes
+- Terrain/sky colors: Controlled by gameStore.world, synced from levelStore on level changes
+- Tree colors: Use entity.color if set (sandbox override), otherwise levelStore.getTreeColor()
+- Turtles: Use bounce behavior with speed property, controllable via game.slowEnemies()
