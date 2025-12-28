@@ -2,6 +2,7 @@ import { Application, Graphics, Container } from 'pixi.js'
 import { useGameStore } from '../store/gameStore'
 import { useMathStore } from '../store/mathStore'
 import { useLevelStore } from '../store/levelStore'
+import { useTimerStore } from '../store/timerStore'
 import { Accessory } from '../config/levels'
 import { EntityConfig, ShapePrimitive } from '../types/game'
 
@@ -144,8 +145,12 @@ export class GameRenderer {
     // Check if destroyed or not initialized
     if (this.isDestroyed || !this.app) return
 
+    // Update game timer
+    const deltaSeconds = this.app.ticker.deltaMS / 1000
+    useTimerStore.getState().tick(deltaSeconds)
+
     // Update animation time (in seconds)
-    this.animationTime += this.app.ticker.deltaMS / 1000
+    this.animationTime += deltaSeconds
 
     // Calculate bobbing offset (gentle up/down motion)
     this.bobOffset = Math.sin(this.animationTime * 6) * 3

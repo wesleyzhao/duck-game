@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useLevelStore } from '../store/levelStore'
 import { useGameStore } from '../store/gameStore'
+import { useTimerStore, formatTime } from '../store/timerStore'
 import { speak } from '../services/voiceService'
 
 export function LevelCompleteOverlay() {
   const showTransition = useLevelStore((state) => state.showLevelTransition)
   const currentLevel = useLevelStore((state) => state.currentLevel)
+  const elapsedTime = useTimerStore((state) => state.elapsedTime)
+  const bestTime = useTimerStore((state) => state.bestTime)
   const [isPreparingNext, setIsPreparingNext] = useState(false)
   const [showMessage, setShowMessage] = useState(false)
   // Capture the completed level when transition starts (so it doesn't change mid-animation)
   const [completedLevel, setCompletedLevel] = useState(0)
+  // Capture the final time when game is won
+  const [finalTime, setFinalTime] = useState(0)
 
   useEffect(() => {
     if (showTransition && !isPreparingNext) {
@@ -17,6 +22,13 @@ export function LevelCompleteOverlay() {
       setCompletedLevel(currentLevel)
       setShowMessage(true)
       setIsPreparingNext(true)
+
+      // If game is won (level 3 complete), stop timer and record best time
+      if (currentLevel >= 3) {
+        setFinalTime(elapsedTime)
+        useTimerStore.getState().stopTimer()
+        useTimerStore.getState().recordBestTime()
+      }
 
       // Announce level complete
       const nextLevel = currentLevel + 1
@@ -67,7 +79,17 @@ export function LevelCompleteOverlay() {
             <p className="text-2xl text-white">
               You completed all 3 levels!
             </p>
-            <p className="text-xl text-yellow-200 mt-2">
+            <div className="mt-4 bg-slate-800/80 rounded-xl px-6 py-3 inline-block">
+              <p className="text-3xl text-white font-mono">
+                ⏱️ Time: {formatTime(finalTime)}
+              </p>
+              {bestTime !== null && finalTime <= bestTime && (
+                <p className="text-xl text-yellow-300 mt-1">
+                  🎉 New Best Time!
+                </p>
+              )}
+            </div>
+            <p className="text-xl text-yellow-200 mt-4">
               You're a math champion! 🎉
             </p>
           </>

@@ -5,11 +5,15 @@ import { ChatPanel } from './components/ChatPanel'
 import { MathProblemModal } from './components/MathProblemModal'
 import { LevelCompleteOverlay } from './components/LevelCompleteOverlay'
 import { useLevelStore } from './store/levelStore'
+import { useTimerStore } from './store/timerStore'
 
 function App() {
-  // Pre-generate questions when the game first loads
+  // Initialize game when first loaded
   useEffect(() => {
+    // Pre-generate questions for level 1
     useLevelStore.getState().generateQuestionsForLevel()
+    // Start the game timer
+    useTimerStore.getState().startTimer()
   }, [])
 
   return (

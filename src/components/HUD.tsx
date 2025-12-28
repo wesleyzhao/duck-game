@@ -1,5 +1,6 @@
 import { useGameStore } from '../store/gameStore'
 import { useLevelStore } from '../store/levelStore'
+import { useTimerStore, formatTime } from '../store/timerStore'
 import { useEffect, useRef, useState } from 'react'
 
 interface FlyingCake {
@@ -18,6 +19,8 @@ export function HUD() {
   const currentLevel = useLevelStore((state) => state.currentLevel)
   const treesSolved = useLevelStore((state) => state.treesSolved)
   const treesRequired = useLevelStore((state) => state.getTreesRequired())
+  const elapsedTime = useTimerStore((state) => state.elapsedTime)
+  const bestTime = useTimerStore((state) => state.bestTime)
 
   const [flyingCakes, setFlyingCakes] = useState<FlyingCake[]>([])
   const [pointsHighlight, setPointsHighlight] = useState(false)
@@ -86,19 +89,33 @@ export function HUD() {
   return (
     <>
       <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-start pointer-events-none">
-        {/* Health Hearts */}
-        <div className="flex gap-2">
-          {Array.from({ length: totalHearts }).map((_, i) => (
-            <span
-              key={i}
-              className="text-4xl"
-              style={{
-                opacity: i < fullHearts ? 1 : (i === fullHearts && hasHalfHeart) ? 0.5 : 0.2,
-              }}
-            >
-              ❤️
-            </span>
-          ))}
+        {/* Timer and Health - Left side */}
+        <div className="flex flex-col gap-2">
+          {/* Timer display */}
+          <div className="bg-slate-800/80 text-white rounded-xl px-4 py-2 font-mono">
+            <div className="flex items-center gap-2 text-2xl">
+              <span>⏱️</span>
+              <span>{formatTime(elapsedTime)}</span>
+            </div>
+            <div className="text-sm text-slate-300">
+              🏆 Best: {bestTime !== null ? formatTime(bestTime) : '--:--.--'}
+            </div>
+          </div>
+
+          {/* Health Hearts */}
+          <div className="flex gap-2">
+            {Array.from({ length: totalHearts }).map((_, i) => (
+              <span
+                key={i}
+                className="text-4xl"
+                style={{
+                  opacity: i < fullHearts ? 1 : (i === fullHearts && hasHalfHeart) ? 0.5 : 0.2,
+                }}
+              >
+                ❤️
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Level indicator - center */}
