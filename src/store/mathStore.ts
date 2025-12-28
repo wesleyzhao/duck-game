@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { MathProblem, generateLocalMathProblem } from '../services/mathService'
 import { useGameStore } from './gameStore'
+import { useQuestionHistoryStore } from './questionHistoryStore'
 import { speak } from '../services/voiceService'
 import { playMathTreeSound, playCorrectSound, playWrongSound } from '../services/soundEffects'
 
@@ -23,6 +24,7 @@ interface MathStore {
   isActive: boolean
   currentProblem: MathProblem | null
   currentTreeId: string | null
+  currentQuestionId: string | null  // For history tracking
   isLoading: boolean
   attempts: number
   lastFeedback: string | null
@@ -38,6 +40,7 @@ export const useMathStore = create<MathStore>((set, get) => ({
   isActive: false,
   currentProblem: null,
   currentTreeId: null,
+  currentQuestionId: null,
   isLoading: false,
   attempts: 0,
   lastFeedback: null,
@@ -63,6 +66,7 @@ export const useMathStore = create<MathStore>((set, get) => ({
       isActive: true,
       currentTreeId: treeId,
       currentProblem: null,
+      currentQuestionId: null,
       attempts: 0,
       lastFeedback: null
     })
@@ -74,7 +78,18 @@ export const useMathStore = create<MathStore>((set, get) => ({
     // This ensures unique random problems each time
     const problem = generateLocalMathProblem()
 
-    set({ currentProblem: problem, isLoading: false })
+    // Generate unique question ID and add to history
+    const questionId = `math-${treeId}-${Date.now()}`
+    useQuestionHistoryStore.getState().addQuestion({
+      id: questionId,
+      treeId: treeId,
+      type: 'math',
+      question: problem.question,
+      correctAnswer: problem.answer,
+      level: 1, // TODO: Get from levelStore once implemented
+    })
+
+    set({ currentProblem: problem, currentQuestionId: questionId, isLoading: false })
 
     // Speak the problem after a short delay for the sound effect
     setTimeout(() => {
@@ -83,15 +98,21 @@ export const useMathStore = create<MathStore>((set, get) => ({
   },
 
   submitAnswer: async (answer: number) => {
-    const { currentProblem, currentTreeId, attempts } = get()
+    const { currentProblem, currentTreeId, currentQuestionId, attempts } = get()
 
-    if (!currentProblem || !currentTreeId) {
+    if (!currentProblem || !currentTreeId || !currentQuestionId) {
       return { correct: false, feedback: 'No problem active' }
     }
 
     const isCorrect = answer === currentProblem.answer
 
+    // Record the answer in history
+    useQuestionHistoryStore.getState().recordAnswer(currentQuestionId, answer, isCorrect)
+
     if (isCorrect) {
+      // Mark as solved in history
+      useQuestionHistoryStore.getState().markSolved(currentQuestionId)
+
       // Play celebration sound immediately
       playCorrectSound()
 
@@ -111,6 +132,7 @@ export const useMathStore = create<MathStore>((set, get) => ({
         isActive: false,
         currentProblem: null,
         currentTreeId: null,
+        currentQuestionId: null,
         isLoading: false,
         attempts: 0,
         lastFeedback: null,
@@ -151,6 +173,7 @@ export const useMathStore = create<MathStore>((set, get) => ({
       isActive: false,
       currentProblem: null,
       currentTreeId: null,
+      currentQuestionId: null,
       isLoading: false,
       attempts: 0,
       lastFeedback: null,
