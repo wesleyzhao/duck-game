@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { LevelConfig, getLevelConfig, Accessory } from '../config/levels'
 import { MathProblem, generateLocalMathProblem } from '../services/mathService'
+import { useGameStore } from './gameStore'
 
 interface LevelStore {
   // State
@@ -71,6 +72,11 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
     const state = get()
     if (state.currentLevel < 3) {
       const nextLevel = (state.currentLevel + 1) as 1 | 2 | 3
+      const config = getLevelConfig(nextLevel)
+
+      // Sync gameStore colors with new level
+      useGameStore.getState().setTerrainColor(config.terrainColor)
+
       set({
         currentLevel: nextLevel,
         treesSolved: 0,
@@ -83,6 +89,11 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
   },
 
   resetLevel: () => {
+    const config = getLevelConfig(1)
+
+    // Sync gameStore colors back to level 1
+    useGameStore.getState().setTerrainColor(config.terrainColor)
+
     set({
       currentLevel: 1,
       treesSolved: 0,

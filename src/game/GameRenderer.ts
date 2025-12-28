@@ -722,7 +722,9 @@ export class GameRenderer {
       return
     }
 
-    // Built-in shapes
+    // Built-in shapes - use entity.color with fallback
+    const entityColor = entity.color || '#888888'
+
     switch (entity.shape) {
       case 'lake':
         this.drawLake(graphics, entity)
@@ -735,16 +737,16 @@ export class GameRenderer {
         break
       case 'circle':
         graphics.circle(centerX, centerY, Math.min(entity.width, entity.height) / 2)
-        graphics.fill(entity.color)
+        graphics.fill(entityColor)
         break
       case 'ellipse':
         graphics.ellipse(centerX, centerY, entity.width / 2, entity.height / 2)
-        graphics.fill(entity.color)
+        graphics.fill(entityColor)
         break
       case 'rectangle':
       default:
         graphics.rect(entity.x, entity.y, entity.width, entity.height)
-        graphics.fill(entity.color)
+        graphics.fill(entityColor)
     }
   }
 
@@ -753,7 +755,7 @@ export class GameRenderer {
     const centerX = entity.x + entity.width / 2
     const centerY = entity.y + entity.height / 2
     graphics.ellipse(centerX, centerY, entity.width / 2, entity.height / 2)
-    graphics.fill(entity.color)
+    graphics.fill(entity.color || '#4A90D9') // Default lake blue
   }
 
   private drawTree(graphics: Graphics, entity: EntityConfig): void {

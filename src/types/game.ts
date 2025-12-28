@@ -28,7 +28,7 @@ export interface EntityConfig {
   width: number
   height: number
   shape: EntityShape
-  color: string
+  color?: string  // Optional - trees fall back to level color if not set
   solid: boolean
   behaviors: BehaviorConfig[]
   // Question tree properties
