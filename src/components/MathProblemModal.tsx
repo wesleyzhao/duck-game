@@ -48,8 +48,8 @@ export function MathProblemModal() {
     closeProblem()
   }
 
-  // Number buttons 0-15
-  const numbers = Array.from({ length: 16 }, (_, i) => i)
+  // Number buttons 0-20 (level 3 can have answers up to 20)
+  const numbers = Array.from({ length: 21 }, (_, i) => i)
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -97,14 +97,14 @@ export function MathProblemModal() {
             )}
 
             {/* Number buttons */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-7 gap-2">
               {numbers.map((num) => (
                 <button
                   key={num}
                   onClick={() => handleNumberClick(num)}
                   disabled={isSubmitting}
                   className={`
-                    p-4 text-3xl font-bold rounded-xl transition-all
+                    p-3 text-2xl font-bold rounded-xl transition-all
                     ${selectedAnswer === num
                       ? 'bg-blue-500 text-white scale-110'
                       : 'bg-white text-blue-600 hover:bg-blue-100 shadow-md'
