@@ -404,11 +404,10 @@ export class GameRenderer {
     if (!this.terrainGraphics) return
 
     const { world } = useGameStore.getState()
-    const terrainColor = useLevelStore.getState().getTerrainColor()
 
     this.terrainGraphics.clear()
     this.terrainGraphics.rect(0, 0, world.width, world.height)
-    this.terrainGraphics.fill(terrainColor)
+    this.terrainGraphics.fill(world.terrainColor)
   }
 
   private renderEntities(): void {
@@ -768,12 +767,14 @@ export class GameRenderer {
     graphics.rect(trunkX, trunkY, trunkWidth, trunkHeight)
     graphics.fill('#8B4513')
 
-    // Foliage (green circle) - use level color, or special color if solved
+    // Foliage (green circle) - use entity color if set, or level color, or special color if solved
     const levelTreeColor = useLevelStore.getState().getTreeColor()
     const foliageX = entity.x + entity.width / 2
     const foliageY = entity.y + foliageRadius
     graphics.circle(foliageX, foliageY, foliageRadius)
-    const foliageColor = entity.mathSolved ? '#32CD32' : levelTreeColor // Lime green if solved
+    // Priority: solved color > entity color > level color
+    const baseColor = entity.color || levelTreeColor
+    const foliageColor = entity.mathSolved ? '#32CD32' : baseColor // Lime green if solved
     graphics.fill(foliageColor)
 
     // Draw question badge if this is a question tree (and not yet solved)
