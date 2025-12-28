@@ -1,10 +1,19 @@
 // Math problem service - generates problems via LLM
 
+export type Difficulty = 'easy' | 'medium' | 'hard'
+
 export interface MathProblem {
   question: string      // Display text: "3 + 2 = ?"
   speakText: string     // Text to speak: "What is three plus two?"
   answer: number        // Correct answer
-  difficulty: 'easy' | 'medium'
+  difficulty: Difficulty
+}
+
+// Difficulty settings per level
+const DIFFICULTY_CONFIG: Record<Difficulty, { minNum: number; maxNum: number; maxAnswer: number }> = {
+  easy: { minNum: 1, maxNum: 5, maxAnswer: 10 },    // Level 1: numbers 1-5
+  medium: { minNum: 1, maxNum: 10, maxAnswer: 15 }, // Level 2: numbers 1-10
+  hard: { minNum: 1, maxNum: 15, maxAnswer: 20 },   // Level 3: numbers 1-15
 }
 
 export interface WrongAnswerResponse {
@@ -87,6 +96,78 @@ export async function generateMathProblem(): Promise<MathProblem | null> {
   }
 }
 
+// Generate a math problem using LLM with context about student progress
+export async function generateMathProblemWithContext(
+  difficulty: Difficulty,
+  historyContext: string
+): Promise<MathProblem> {
+  const apiKey = import.meta.env.VITE_CLAUDE_API_KEY
+  const config = DIFFICULTY_CONFIG[difficulty]
+
+  // If no API key, fall back to local generation
+  if (!apiKey) {
+    console.log('No API key, using local math generation')
+    return generateLocalMathProblem(difficulty)
+  }
+
+  const prompt = `You are a friendly math teacher for a 6-year-old child named Emerson playing a fun duck game. Generate ONE math problem.
+
+DIFFICULTY: ${difficulty.toUpperCase()}
+- Numbers should be between ${config.minNum} and ${config.maxNum}
+- The answer should be between 0 and ${config.maxAnswer}
+- Use addition or subtraction only
+
+STUDENT PROGRESS:
+${historyContext}
+
+Based on the student's progress, generate an appropriate problem. If they're struggling, make it slightly easier. If they're doing well, you can make it a bit more challenging (within the difficulty bounds).
+
+Respond with ONLY valid JSON in this exact format (no markdown, no extra text):
+{"question": "3 + 2 = ?", "speakText": "What is three plus two?", "answer": 5}`
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 256,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      console.error('Math problem API error:', response.status)
+      return generateLocalMathProblem(difficulty)
+    }
+
+    const data = await response.json()
+    const text = data.content[0]?.text || ''
+
+    // Parse JSON response
+    const parsed = JSON.parse(text.trim())
+    return {
+      question: parsed.question,
+      speakText: parsed.speakText,
+      answer: parsed.answer,
+      difficulty,
+    }
+  } catch (error) {
+    console.error('Failed to generate math problem with context:', error)
+    return generateLocalMathProblem(difficulty)
+  }
+}
+
 export async function getWrongAnswerFeedback(
   problem: string,
   wrongAnswer: number,
@@ -149,29 +230,36 @@ export async function getWrongAnswerFeedback(
 }
 
 // Fallback: Generate a simple problem locally if API fails
-export function generateLocalMathProblem(): MathProblem {
+export function generateLocalMathProblem(difficulty: Difficulty = 'easy'): MathProblem {
+  const config = DIFFICULTY_CONFIG[difficulty]
   const isAddition = Math.random() > 0.4 // 60% addition, 40% subtraction
   let a: number, b: number, answer: number, question: string, speakText: string
 
   if (isAddition) {
-    a = Math.floor(Math.random() * 8) + 1 // 1-8
-    b = Math.floor(Math.random() * 8) + 1 // 1-8
+    // For addition, ensure answer doesn't exceed maxAnswer
+    a = Math.floor(Math.random() * (config.maxNum - config.minNum + 1)) + config.minNum
+    const maxB = Math.min(config.maxNum, config.maxAnswer - a)
+    b = Math.floor(Math.random() * (maxB - config.minNum + 1)) + config.minNum
     answer = a + b
     question = `${a} + ${b} = ?`
     speakText = `What is ${numberToWord(a)} plus ${numberToWord(b)}?`
   } else {
-    a = Math.floor(Math.random() * 8) + 3 // 3-10
-    b = Math.floor(Math.random() * (a - 1)) + 1 // 1 to (a-1)
+    // For subtraction, ensure a > b and answer is positive
+    a = Math.floor(Math.random() * (config.maxNum - config.minNum - 1)) + config.minNum + 2 // At least minNum+2
+    b = Math.floor(Math.random() * (a - config.minNum)) + config.minNum // 1 to (a-1)
     answer = a - b
     question = `${a} - ${b} = ?`
     speakText = `What is ${numberToWord(a)} minus ${numberToWord(b)}?`
   }
 
-  return { question, speakText, answer, difficulty: 'easy' }
+  return { question, speakText, answer, difficulty }
 }
 
 function numberToWord(n: number): string {
-  const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-                 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen']
+  const words = [
+    'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+    'nineteen', 'twenty'
+  ]
   return words[n] || n.toString()
 }
