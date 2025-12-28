@@ -700,29 +700,51 @@ export class GameRenderer {
     const foliageColor = entity.mathSolved ? '#32CD32' : levelTreeColor // Lime green if solved
     graphics.fill(foliageColor)
 
-    // Draw math symbol badge if this is a math tree (and not yet solved)
+    // Draw question badge if this is a question tree (and not yet solved)
     if (entity.hasMathSymbol && !entity.mathSolved) {
       const badgeRadius = 14
       const badgeX = foliageX
       const badgeY = foliageY
 
-      // Yellow badge circle
-      graphics.circle(badgeX, badgeY, badgeRadius)
-      graphics.fill('#FFD700')
+      // Get badge colors based on question type
+      const questionType = entity.questionType || 'math'
+      const badgeColors = {
+        math: { fill: '#FFD700', border: '#FF8C00' },        // Yellow/Orange
+        spelling: { fill: '#4A90D9', border: '#2E6BA8' },    // Blue
+        pronunciation: { fill: '#9B59B6', border: '#7D3C98' } // Purple
+      }
+      const colors = badgeColors[questionType] || badgeColors.math
 
-      // Orange border
+      // Badge circle
       graphics.circle(badgeX, badgeY, badgeRadius)
-      graphics.stroke({ width: 2, color: '#FF8C00' })
+      graphics.fill(colors.fill)
+      graphics.circle(badgeX, badgeY, badgeRadius)
+      graphics.stroke({ width: 2, color: colors.border })
 
-      // Draw "+" symbol using rectangles (simpler than ?)
-      const plusSize = 8
-      const plusThick = 3
-      // Horizontal bar
-      graphics.rect(badgeX - plusSize/2, badgeY - plusThick/2, plusSize, plusThick)
-      graphics.fill('#333333')
-      // Vertical bar
-      graphics.rect(badgeX - plusThick/2, badgeY - plusSize/2, plusThick, plusSize)
-      graphics.fill('#333333')
+      // Draw symbol based on question type
+      if (questionType === 'math') {
+        // Draw "+" symbol
+        const plusSize = 8
+        const plusThick = 3
+        graphics.rect(badgeX - plusSize/2, badgeY - plusThick/2, plusSize, plusThick)
+        graphics.fill('#333333')
+        graphics.rect(badgeX - plusThick/2, badgeY - plusSize/2, plusThick, plusSize)
+        graphics.fill('#333333')
+      } else if (questionType === 'spelling') {
+        // Draw "ABC" text placeholder (simple rectangles for now)
+        graphics.rect(badgeX - 6, badgeY - 2, 12, 4)
+        graphics.fill('#FFFFFF')
+      } else if (questionType === 'pronunciation') {
+        // Draw speaker icon placeholder (simple shape)
+        graphics.rect(badgeX - 3, badgeY - 4, 6, 8)
+        graphics.fill('#FFFFFF')
+        graphics.moveTo(badgeX + 3, badgeY - 6)
+        graphics.lineTo(badgeX + 8, badgeY - 8)
+        graphics.lineTo(badgeX + 8, badgeY + 8)
+        graphics.lineTo(badgeX + 3, badgeY + 6)
+        graphics.closePath()
+        graphics.fill('#FFFFFF')
+      }
     }
 
     // Draw checkmark badge if solved

@@ -16,6 +16,9 @@ export interface BehaviorConfig {
   range?: number
 }
 
+// Question types for different tree puzzles
+export type QuestionType = 'math' | 'spelling' | 'pronunciation'
+
 // Game entities (trees, lake, objects created by LLM)
 export interface EntityConfig {
   id: string
@@ -28,9 +31,10 @@ export interface EntityConfig {
   color: string
   solid: boolean
   behaviors: BehaviorConfig[]
-  // Math tree properties
-  hasMathSymbol?: boolean
-  mathSolved?: boolean
+  // Question tree properties
+  questionType?: QuestionType       // Type of question (default: 'math')
+  hasMathSymbol?: boolean           // Legacy: has any question symbol
+  mathSolved?: boolean              // Legacy: question has been solved
 }
 
 // Shape primitives for custom shapes
