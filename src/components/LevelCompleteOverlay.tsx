@@ -27,7 +27,7 @@ export function LevelCompleteOverlay() {
       }
 
       // Wait for celebration, then advance level
-      setTimeout(async () => {
+      setTimeout(() => {
         if (currentLevel < 3) {
           // Reset trees for new level
           regenerateTreesForLevel(currentLevel + 1)
@@ -35,8 +35,11 @@ export function LevelCompleteOverlay() {
           // Advance to next level
           useLevelStore.getState().advanceLevel()
 
-          // Pre-generate all questions for the new level
-          await useLevelStore.getState().generateQuestionsForLevel()
+          // Reset duck to center of map so it doesn't immediately touch a tree
+          useGameStore.getState().teleportPlayer(1000, 700)
+
+          // Pre-generate questions in background (non-blocking)
+          useLevelStore.getState().generateQuestionsForLevel()
         }
 
         // Hide the overlay
