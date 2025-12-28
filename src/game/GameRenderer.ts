@@ -1,6 +1,7 @@
 import { Application, Graphics, Container } from 'pixi.js'
 import { useGameStore } from '../store/gameStore'
 import { useMathStore } from '../store/mathStore'
+import { useLevelStore } from '../store/levelStore'
 import { EntityConfig, ShapePrimitive } from '../types/game'
 
 export class GameRenderer {
@@ -338,10 +339,11 @@ export class GameRenderer {
     if (!this.terrainGraphics) return
 
     const { world } = useGameStore.getState()
+    const terrainColor = useLevelStore.getState().getTerrainColor()
 
     this.terrainGraphics.clear()
     this.terrainGraphics.rect(0, 0, world.width, world.height)
-    this.terrainGraphics.fill(world.terrainColor)
+    this.terrainGraphics.fill(terrainColor)
   }
 
   private renderEntities(): void {
@@ -365,7 +367,9 @@ export class GameRenderer {
 
     const { player, customShapes } = useGameStore.getState()
     const { x, y, appearance } = player
-    const scale = appearance.size * this.breathScale
+    // Use level duck size, with breath animation
+    const levelDuckSize = useLevelStore.getState().getDuckSize()
+    const scale = levelDuckSize * this.breathScale
 
     // Calculate Y offset - much bigger jump when celebrating!
     let animY = y + this.bobOffset
@@ -623,11 +627,12 @@ export class GameRenderer {
     graphics.rect(trunkX, trunkY, trunkWidth, trunkHeight)
     graphics.fill('#8B4513')
 
-    // Foliage (green circle) - use different color if solved
+    // Foliage (green circle) - use level color, or special color if solved
+    const levelTreeColor = useLevelStore.getState().getTreeColor()
     const foliageX = entity.x + entity.width / 2
     const foliageY = entity.y + foliageRadius
     graphics.circle(foliageX, foliageY, foliageRadius)
-    const foliageColor = entity.mathSolved ? '#32CD32' : entity.color // Lime green if solved
+    const foliageColor = entity.mathSolved ? '#32CD32' : levelTreeColor // Lime green if solved
     graphics.fill(foliageColor)
 
     // Draw math symbol badge if this is a math tree (and not yet solved)

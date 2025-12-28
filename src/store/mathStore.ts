@@ -1,19 +1,10 @@
 import { create } from 'zustand'
-import { MathProblem, Difficulty, generateMathProblemWithContext } from '../services/mathService'
+import { MathProblem, generateMathProblemWithContext } from '../services/mathService'
 import { useGameStore } from './gameStore'
 import { useQuestionHistoryStore } from './questionHistoryStore'
+import { useLevelStore } from './levelStore'
 import { speak } from '../services/voiceService'
 import { playMathTreeSound, playCorrectSound, playWrongSound } from '../services/soundEffects'
-
-// Map level to difficulty
-function getLevelDifficulty(level: number): Difficulty {
-  switch (level) {
-    case 1: return 'easy'
-    case 2: return 'medium'
-    case 3: return 'hard'
-    default: return 'easy'
-  }
-}
 
 // Local encouraging feedback for wrong answers (faster than LLM)
 const wrongAnswerFeedback = [
@@ -84,9 +75,10 @@ export const useMathStore = create<MathStore>((set, get) => ({
     // Play discovery sound
     playMathTreeSound()
 
-    // Get current level (will be from levelStore once implemented, default to 1)
-    const currentLevel = 1 // TODO: Get from levelStore
-    const difficulty = getLevelDifficulty(currentLevel)
+    // Get current level and difficulty from levelStore
+    const levelState = useLevelStore.getState()
+    const currentLevel = levelState.currentLevel
+    const difficulty = levelState.getLevelConfig().difficulty
 
     // Get history context for LLM
     const historyContext = useQuestionHistoryStore.getState().getHistoryForLLM()
