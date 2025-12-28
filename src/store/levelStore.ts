@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { LevelConfig, getLevelConfig, Accessory } from '../config/levels'
-import { MathProblem, generateMathProblemWithContext, generateLocalMathProblem } from '../services/mathService'
-import { useQuestionHistoryStore } from './questionHistoryStore'
+import { MathProblem, generateLocalMathProblem } from '../services/mathService'
 
 interface LevelStore {
   // State
@@ -104,19 +103,13 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
     set({ isGeneratingQuestions: true })
 
     const config = getLevelConfig(state.currentLevel)
-    const historyContext = useQuestionHistoryStore.getState().getHistoryForLLM()
     const questions: MathProblem[] = []
 
     // Generate all questions for this level
+    // Use local generation for variety (LLM tends to repeat with same context)
     for (let i = 0; i < config.treesRequired; i++) {
-      try {
-        // Try LLM first, fall back to local
-        const problem = await generateMathProblemWithContext(config.difficulty, historyContext)
-        questions.push(problem)
-      } catch {
-        // Fallback to local generation
-        questions.push(generateLocalMathProblem(config.difficulty))
-      }
+      const problem = generateLocalMathProblem(config.difficulty)
+      questions.push(problem)
     }
 
     set({
@@ -124,19 +117,24 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
       isGeneratingQuestions: false,
     })
 
-    console.log(`Pre-generated ${questions.length} questions for level ${state.currentLevel}`)
+    console.log(`Pre-generated ${questions.length} questions for level ${state.currentLevel}:`,
+      questions.map(q => q.question))
   },
 
   getNextQuestion: () => {
     const state = get()
     if (state.preGeneratedQuestions.length === 0) {
       // Fallback if no pre-generated questions available
+      console.log('getNextQuestion: No pre-generated questions, generating locally')
       const config = getLevelConfig(state.currentLevel)
       return generateLocalMathProblem(config.difficulty)
     }
 
     // Get the next question (based on trees solved)
     const questionIndex = state.treesSolved
+    console.log(`getNextQuestion: treesSolved=${questionIndex}, returning question[${questionIndex}]:`,
+      state.preGeneratedQuestions[questionIndex]?.question)
+
     if (questionIndex < state.preGeneratedQuestions.length) {
       return state.preGeneratedQuestions[questionIndex]
     }
