@@ -35,6 +35,8 @@ export interface EntityConfig {
   questionType?: QuestionType       // Type of question (default: 'math')
   hasMathSymbol?: boolean           // Legacy: has any question symbol
   mathSolved?: boolean              // Legacy: question has been solved
+  // Enemy properties
+  isEnemy?: boolean                 // Is this entity an enemy that hurts the player
 }
 
 // Shape primitives for custom shapes
@@ -59,6 +61,9 @@ export interface PlayerState {
   y: number
   health: number
   maxHealth: number
+  lives: number
+  maxLives: number
+  invincibleUntil: number  // Timestamp for invincibility after taking damage
   points: number
   appearance: PlayerAppearance
 }

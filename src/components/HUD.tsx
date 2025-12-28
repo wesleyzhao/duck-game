@@ -13,8 +13,8 @@ interface FlyingCake {
 }
 
 export function HUD() {
-  const health = useGameStore((state) => state.player.health)
-  const maxHealth = useGameStore((state) => state.player.maxHealth)
+  const lives = useGameStore((state) => state.player.lives)
+  const maxLives = useGameStore((state) => state.player.maxLives)
   const points = useGameStore((state) => state.player.points)
   const currentLevel = useLevelStore((state) => state.currentLevel)
   const treesSolved = useLevelStore((state) => state.treesSolved)
@@ -72,10 +72,6 @@ export function HUD() {
     prevPointsRef.current = points
   }, [points])
 
-  // Calculate number of hearts (each heart = 20 HP, so 5 hearts for 100 HP)
-  const totalHearts = Math.ceil(maxHealth / 20)
-  const fullHearts = Math.floor(health / 20)
-  const hasHalfHeart = (health % 20) >= 10
 
   // Get target position for flying cakes (the points meter)
   const getMeterPosition = () => {
@@ -102,17 +98,19 @@ export function HUD() {
             </div>
           </div>
 
-          {/* Health Hearts */}
-          <div className="flex gap-2">
-            {Array.from({ length: totalHearts }).map((_, i) => (
+          {/* Lives as Duck Emojis */}
+          <div className="flex gap-1">
+            {Array.from({ length: maxLives }).map((_, i) => (
               <span
                 key={i}
-                className="text-4xl"
+                className="text-3xl transition-all duration-300"
                 style={{
-                  opacity: i < fullHearts ? 1 : (i === fullHearts && hasHalfHeart) ? 0.5 : 0.2,
+                  opacity: i < lives ? 1 : 0.2,
+                  filter: i < lives ? 'none' : 'grayscale(100%)',
+                  transform: i < lives ? 'scale(1)' : 'scale(0.8)',
                 }}
               >
-                ❤️
+                🐤
               </span>
             ))}
           </div>

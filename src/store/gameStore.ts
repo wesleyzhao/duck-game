@@ -21,6 +21,10 @@ interface GameStore {
   setPlayerAppearance: (appearance: Partial<PlayerAppearance>) => void
   modifyHealth: (amount: number) => void
   modifyPoints: (amount: number) => void
+  loseLife: () => number              // Returns remaining lives
+  resetLives: () => void
+  setInvincible: (durationMs: number) => void
+  isInvincible: () => boolean
 
   // Entity actions
   addEntity: (entity: EntityConfig) => void
@@ -246,6 +250,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     y: 700,
     health: 100,
     maxHealth: 100,
+    lives: 5,
+    maxLives: 5,
+    invincibleUntil: 0,
     points: 0,
     appearance: {
       shape: 'duck',
@@ -321,6 +328,40 @@ export const useGameStore = create<GameStore>((set, get) => ({
         points: Math.max(0, state.player.points + amount),
       },
     })),
+
+  loseLife: () => {
+    const state = get()
+    const newLives = Math.max(0, state.player.lives - 1)
+    set({
+      player: {
+        ...state.player,
+        lives: newLives,
+      },
+    })
+    return newLives
+  },
+
+  resetLives: () =>
+    set((state) => ({
+      player: {
+        ...state.player,
+        lives: state.player.maxLives,
+      },
+    })),
+
+  setInvincible: (durationMs: number) => {
+    const invincibleUntil = Date.now() + durationMs
+    set((state) => ({
+      player: {
+        ...state.player,
+        invincibleUntil,
+      },
+    }))
+  },
+
+  isInvincible: () => {
+    return Date.now() < get().player.invincibleUntil
+  },
 
   // Entity actions
   addEntity: (entity) =>
