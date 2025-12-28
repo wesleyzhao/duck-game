@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { GameCanvas } from './components/GameCanvas'
 import { HUD } from './components/HUD'
 import { ChatPanel } from './components/ChatPanel'
+import { CodeIDEPanel } from './components/CodeIDEPanel'
 import { MathProblemModal } from './components/MathProblemModal'
 import { LevelCompleteOverlay } from './components/LevelCompleteOverlay'
 import { GameOverOverlay } from './components/GameOverOverlay'
@@ -62,12 +63,20 @@ function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-sky-200 flex items-center justify-center p-8 gap-4">
-      <div className="relative">
-        <GameCanvas />
-        <HUD />
+    <div className="min-h-screen bg-sky-200 flex flex-col items-center p-4 gap-4">
+      {/* Game and Chat side by side */}
+      <div className="flex gap-4">
+        <div className="relative">
+          <GameCanvas />
+          <HUD />
+        </div>
+        <ChatPanel />
       </div>
-      <ChatPanel />
+
+      {/* Code Editor below */}
+      <CodeIDEPanel />
+
+      {/* Modals */}
       <MathProblemModal />
       <LevelCompleteOverlay />
       <GameOverOverlay />

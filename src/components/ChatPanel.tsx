@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
-import { executeSandboxedCode } from '../sandbox/executor'
 import { useHistoryStore } from '../store/historyStore'
+import { useCodeEditorStore } from '../store/codeEditorStore'
 import { callLLM, buildGameContext } from '../services/llmService'
 import { speak, stopSpeaking } from '../services/voiceService'
 import { VoiceButton } from './VoiceButton'
@@ -15,7 +15,8 @@ export function ChatPanel() {
     { role: 'game', content: WELCOME_MESSAGE },
   ])
 
-  const { undo, redo, canUndo, canRedo, addEntry } = useHistoryStore()
+  const { undo, redo, canUndo, canRedo } = useHistoryStore()
+  const { setCode, setIsGenerating, setExecutionResult } = useCodeEditorStore()
 
   // Clean up speech on unmount
   useEffect(() => {
@@ -62,19 +63,16 @@ export function ChatPanel() {
     const isDirectCode = userInput.startsWith('game.')
 
     if (isDirectCode) {
-      // Execute directly
-      const result = executeSandboxedCode(userInput)
-      if (result.success) {
-        addEntry(userInput, result)
-        addMessage('game', result.message || 'Done!')
-      } else {
-        addMessage('game', `Error: ${result.error}`)
-      }
+      // Put direct code in editor instead of executing
+      setCode(userInput)
+      setExecutionResult('idle')
+      addMessage('game', 'Code ready! Click "Run Code" below to execute.')
       return
     }
 
     // Natural language - call LLM
     setIsLoading(true)
+    setIsGenerating(true)
 
     try {
       const context = buildGameContext()
@@ -83,24 +81,21 @@ export function ChatPanel() {
       if (llmResponse.error) {
         addMessage('game', `Oops! ${llmResponse.error}`)
         setIsLoading(false)
+        setIsGenerating(false)
         return
       }
 
-      // Execute the LLM-generated code
-      const result = executeSandboxedCode(llmResponse.code)
-
-      if (result.success) {
-        addEntry(userInput, result)
-        addMessage('game', result.message || 'Done!')
-      } else {
-        addMessage('game', `Oops, something went wrong! ${result.error}`)
-      }
+      // Put LLM-generated code in editor (DON'T execute - let user click Run)
+      setCode(llmResponse.code)
+      setExecutionResult('idle')
+      addMessage('game', 'I wrote some code for you! Check the editor below and click "Run Code" when ready!')
     } catch (error) {
       addMessage('game', 'Oh no! I had trouble understanding that.')
     }
 
     setIsLoading(false)
-  }, [isLoading, addMessage, canUndo, canRedo, undo, redo, addEntry])
+    setIsGenerating(false)
+  }, [isLoading, addMessage, canUndo, canRedo, undo, redo, setCode, setIsGenerating, setExecutionResult])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
