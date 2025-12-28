@@ -5,6 +5,9 @@ interface FlyingCake {
   id: number
   startX: number
   startY: number
+  emoji: string
+  delay: number
+  rotation: number
 }
 
 export function HUD() {
@@ -13,9 +16,13 @@ export function HUD() {
   const points = useGameStore((state) => state.player.points)
 
   const [flyingCakes, setFlyingCakes] = useState<FlyingCake[]>([])
+  const [pointsHighlight, setPointsHighlight] = useState(false)
   const prevPointsRef = useRef(points)
   const pointsMeterRef = useRef<HTMLDivElement>(null)
   const cakeIdRef = useRef(0)
+
+  // Variety of cake/dessert emojis for visual interest
+  const cakeEmojis = ['🍰', '🧁', '🎂', '🍩', '🍪', '🍬']
 
   // Detect point increases and spawn flying cakes
   useEffect(() => {
@@ -29,17 +36,31 @@ export function HUD() {
         newCakes.push({
           id: cakeIdRef.current++,
           // Random starting position in the center-ish area of screen
-          startX: window.innerWidth / 2 + (Math.random() - 0.5) * 300,
-          startY: window.innerHeight / 2 + (Math.random() - 0.5) * 200,
+          startX: window.innerWidth / 2 + (Math.random() - 0.5) * 400,
+          startY: window.innerHeight / 2 + (Math.random() - 0.5) * 300,
+          // Random emoji from variety
+          emoji: cakeEmojis[Math.floor(Math.random() * cakeEmojis.length)],
+          // Stagger the animation start
+          delay: i * 50,
+          // Random rotation amount
+          rotation: (Math.random() - 0.5) * 720,
         })
       }
 
       setFlyingCakes(prev => [...prev, ...newCakes])
 
-      // Remove cakes after animation completes
+      // Trigger points highlight
+      setPointsHighlight(true)
+
+      // Remove cakes after animation completes (account for max delay + animation time)
       setTimeout(() => {
         setFlyingCakes(prev => prev.filter(c => !newCakes.find(nc => nc.id === c.id)))
-      }, 800)
+      }, 1200)
+
+      // End points highlight after animation
+      setTimeout(() => {
+        setPointsHighlight(false)
+      }, 1000)
     }
     prevPointsRef.current = points
   }, [points])
@@ -79,12 +100,19 @@ export function HUD() {
         {/* Points with Cake icon */}
         <div
           ref={pointsMeterRef}
-          className="bg-pink-100 border-3 border-pink-400 rounded-xl px-5 py-3 transition-transform"
+          className="bg-pink-100 border-3 border-pink-400 rounded-xl px-5 py-3 transition-all duration-200"
           style={{
-            animation: flyingCakes.length > 0 ? 'pulse 0.3s ease-in-out' : 'none'
+            animation: flyingCakes.length > 0 ? 'pulse 0.3s ease-in-out' : 'none',
+            transform: pointsHighlight ? 'scale(1.1)' : 'scale(1)',
           }}
         >
-          <span className="text-pink-700 font-bold text-2xl">🎂 {points}</span>
+          <span className="font-bold transition-all duration-200" style={{
+            fontSize: pointsHighlight ? '2rem' : '1.5rem',
+            color: pointsHighlight ? '#db2777' : '#be185d',
+            textShadow: pointsHighlight ? '0 0 8px rgba(219, 39, 119, 0.5)' : 'none',
+          }}>
+            🎂 {points}
+          </span>
         </div>
       </div>
 
@@ -98,12 +126,13 @@ export function HUD() {
             style={{
               left: cake.startX,
               top: cake.startY,
-              animation: 'flyToCake 0.7s ease-in forwards',
+              animation: `flyToCake 0.8s ease-out ${cake.delay}ms forwards`,
               '--target-x': `${target.x - cake.startX}px`,
               '--target-y': `${target.y - cake.startY}px`,
+              '--rotation': `${cake.rotation}deg`,
             } as React.CSSProperties}
           >
-            🍰
+            {cake.emoji}
           </div>
         )
       })}
@@ -112,14 +141,14 @@ export function HUD() {
       <style>{`
         @keyframes flyToCake {
           0% {
-            transform: translate(0, 0) scale(1.2);
+            transform: translate(0, 0) scale(1.3) rotate(0deg);
             opacity: 1;
           }
-          70% {
-            opacity: 1;
+          30% {
+            transform: translate(calc(var(--target-x) * 0.3), calc(var(--target-y) * 0.3 - 40px)) scale(1.1) rotate(calc(var(--rotation) * 0.3));
           }
           100% {
-            transform: translate(var(--target-x), var(--target-y)) scale(0.3);
+            transform: translate(var(--target-x), var(--target-y)) scale(0.4) rotate(var(--rotation));
             opacity: 0;
           }
         }
