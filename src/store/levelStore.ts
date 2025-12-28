@@ -78,6 +78,7 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
         levelComplete: false,
         showLevelTransition: false,
         preGeneratedQuestions: [], // Clear for new level
+        isGeneratingQuestions: false, // Reset so new questions can be generated
       })
     }
   },

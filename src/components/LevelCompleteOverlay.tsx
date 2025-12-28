@@ -8,9 +8,13 @@ export function LevelCompleteOverlay() {
   const currentLevel = useLevelStore((state) => state.currentLevel)
   const [isPreparingNext, setIsPreparingNext] = useState(false)
   const [showMessage, setShowMessage] = useState(false)
+  // Capture the completed level when transition starts (so it doesn't change mid-animation)
+  const [completedLevel, setCompletedLevel] = useState(0)
 
   useEffect(() => {
     if (showTransition && !isPreparingNext) {
+      // Capture the level that was just completed
+      setCompletedLevel(currentLevel)
       setShowMessage(true)
       setIsPreparingNext(true)
 
@@ -45,7 +49,8 @@ export function LevelCompleteOverlay() {
 
   if (!showMessage) return null
 
-  const isGameComplete = currentLevel >= 3
+  // Use the captured level for display (not the reactive currentLevel which changes mid-animation)
+  const isGameComplete = completedLevel >= 3
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -67,14 +72,14 @@ export function LevelCompleteOverlay() {
           <>
             <div className="text-8xl mb-4">🎉</div>
             <h1 className="text-6xl font-bold text-green-400 drop-shadow-lg mb-4">
-              Level {currentLevel} Complete!
+              Level {completedLevel} Complete!
             </h1>
             <p className="text-2xl text-white">
-              Get ready for Level {currentLevel + 1}!
+              Get ready for Level {completedLevel + 1}!
             </p>
             <div className="mt-4 flex justify-center gap-2">
-              {currentLevel + 1 === 2 && <span className="text-4xl">🎨</span>}
-              {currentLevel + 1 === 3 && <span className="text-4xl">🦸</span>}
+              {completedLevel + 1 === 2 && <span className="text-4xl">🎨</span>}
+              {completedLevel + 1 === 3 && <span className="text-4xl">🦸</span>}
             </div>
           </>
         )}
