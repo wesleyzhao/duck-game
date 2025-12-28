@@ -39,9 +39,9 @@ export function LevelCompleteOverlay() {
         speak(`Incredible! You completed all the levels! You are a math champion!`)
       }
 
-      // Wait for celebration, then advance level
-      setTimeout(() => {
-        if (currentLevel < 3) {
+      // Wait for celebration, then advance level (but not on game win - wait for button)
+      if (currentLevel < 3) {
+        setTimeout(() => {
           // Reset trees for new level
           regenerateTreesForLevel(currentLevel + 1)
 
@@ -56,15 +56,54 @@ export function LevelCompleteOverlay() {
 
           // Pre-generate questions in background (non-blocking)
           useLevelStore.getState().generateQuestionsForLevel()
-        }
 
-        // Hide the overlay
-        setShowMessage(false)
-        setIsPreparingNext(false)
-        useLevelStore.getState().setShowLevelTransition(false)
-      }, 3000)
+          // Hide the overlay
+          setShowMessage(false)
+          setIsPreparingNext(false)
+          useLevelStore.getState().setShowLevelTransition(false)
+        }, 3000)
+      }
+      // For game win (level 3), keep overlay visible until player clicks "Play Again"
     }
   }, [showTransition, currentLevel, isPreparingNext])
+
+  const handlePlayAgain = () => {
+    // Reset game state
+    const gameStore = useGameStore.getState()
+    const timerStore = useTimerStore.getState()
+    const levelStore = useLevelStore.getState()
+
+    // Reset to level 1
+    levelStore.resetLevel()
+
+    // Reset lives
+    gameStore.resetLives()
+
+    // Reset timer (but keep best time)
+    timerStore.resetTimer()
+    timerStore.startTimer()
+
+    // Reset duck position
+    gameStore.teleportPlayer(1000, 700)
+
+    // Reset trees for level 1
+    regenerateTreesForLevel(1)
+
+    // Remove all turtles and respawn for level 1
+    const existingTurtles = gameStore.entities.filter(e => e.shape === 'turtle')
+    existingTurtles.forEach(turtle => {
+      gameStore.removeEntity(turtle.id)
+    })
+    spawnTurtlesForLevel(1)
+
+    // Pre-generate questions
+    levelStore.generateQuestionsForLevel()
+
+    // Hide overlay
+    setShowMessage(false)
+    setIsPreparingNext(false)
+    levelStore.setShowLevelTransition(false)
+  }
 
   if (!showMessage) return null
 
@@ -93,9 +132,15 @@ export function LevelCompleteOverlay() {
                 </p>
               )}
             </div>
-            <p className="text-xl text-yellow-200 mt-4">
+            <p className="text-xl text-yellow-200 mt-4 mb-6">
               You're a math champion! 🎉
             </p>
+            <button
+              onClick={handlePlayAgain}
+              className="px-8 py-4 bg-green-500 hover:bg-green-600 text-white text-2xl font-bold rounded-xl shadow-lg transition-all hover:scale-105 active:scale-95"
+            >
+              Play Again
+            </button>
           </>
         ) : (
           <>
