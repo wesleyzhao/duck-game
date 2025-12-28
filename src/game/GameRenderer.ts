@@ -663,6 +663,9 @@ export class GameRenderer {
       case 'tree':
         this.drawTree(graphics, entity)
         break
+      case 'turtle':
+        this.drawTurtle(graphics, entity)
+        break
       case 'circle':
         graphics.circle(centerX, centerY, Math.min(entity.width, entity.height) / 2)
         graphics.fill(entity.color)
@@ -774,6 +777,70 @@ export class GameRenderer {
       graphics.rect(badgeX - 1, badgeY - 5, 3, 8)
       graphics.fill('#FFFFFF')
     }
+  }
+
+  private drawTurtle(graphics: Graphics, entity: EntityConfig): void {
+    const centerX = entity.x + entity.width / 2
+    const centerY = entity.y + entity.height / 2
+    const shellWidth = entity.width * 0.8
+    const shellHeight = entity.height * 0.6
+
+    // Get movement direction from behavior state to orient the turtle
+    const behaviorStateEntry = this.behaviorState.get(entity.id)
+    const dx = behaviorStateEntry?.bounceDir?.dx ?? 1
+    const facingRight = dx > 0
+
+    // Shell (dark green oval)
+    graphics.ellipse(centerX, centerY, shellWidth / 2, shellHeight / 2)
+    graphics.fill('#2D5A27')
+
+    // Shell pattern (lighter green inner oval)
+    graphics.ellipse(centerX, centerY, shellWidth * 0.35, shellHeight * 0.35)
+    graphics.fill('#4A7C43')
+
+    // Shell border
+    graphics.ellipse(centerX, centerY, shellWidth / 2, shellHeight / 2)
+    graphics.stroke({ width: 2, color: '#1A3A18' })
+
+    // Head (pokes out in movement direction)
+    const headOffsetX = facingRight ? shellWidth * 0.4 : -shellWidth * 0.4
+    const headX = centerX + headOffsetX
+    const headY = centerY - shellHeight * 0.1
+    const headRadius = entity.width * 0.15
+
+    graphics.circle(headX, headY, headRadius)
+    graphics.fill('#5B8C52')
+    graphics.circle(headX, headY, headRadius)
+    graphics.stroke({ width: 1, color: '#2D5A27' })
+
+    // Eyes (two small dots)
+    const eyeOffsetX = facingRight ? headRadius * 0.4 : -headRadius * 0.4
+    const eyeY = headY - headRadius * 0.2
+    graphics.circle(headX + eyeOffsetX, eyeY, 2)
+    graphics.fill('#000000')
+
+    // Snapping mouth line
+    const mouthX = headX + (facingRight ? headRadius * 0.6 : -headRadius * 0.6)
+    graphics.rect(mouthX - 3, headY + 2, 6, 2)
+    graphics.fill('#1A3A18')
+
+    // Legs (4 small circles at corners of shell)
+    const legRadius = entity.width * 0.08
+    const legPositions = [
+      { x: centerX - shellWidth * 0.35, y: centerY + shellHeight * 0.3 },  // Back left
+      { x: centerX + shellWidth * 0.35, y: centerY + shellHeight * 0.3 },  // Back right
+      { x: centerX - shellWidth * 0.3, y: centerY - shellHeight * 0.2 },   // Front left
+      { x: centerX + shellWidth * 0.3, y: centerY - shellHeight * 0.2 },   // Front right
+    ]
+    legPositions.forEach(pos => {
+      graphics.circle(pos.x, pos.y, legRadius)
+      graphics.fill('#5B8C52')
+    })
+
+    // Small tail on the back
+    const tailX = centerX + (facingRight ? -shellWidth * 0.45 : shellWidth * 0.45)
+    graphics.circle(tailX, centerY, legRadius * 0.7)
+    graphics.fill('#5B8C52')
   }
 
   private startCelebration(): void {

@@ -11,6 +11,7 @@ export interface LevelConfig {
   accessory: Accessory    // Duck accessory
   difficulty: Difficulty  // Math difficulty
   treesRequired: number   // Trees to solve to complete level
+  turtleCount: number     // Number of enemy turtles
 }
 
 export const LEVEL_CONFIGS: Record<1 | 2 | 3, LevelConfig> = {
@@ -23,6 +24,7 @@ export const LEVEL_CONFIGS: Record<1 | 2 | 3, LevelConfig> = {
     accessory: 'none',
     difficulty: 'easy',
     treesRequired: 3,
+    turtleCount: 2,
   },
   2: {
     level: 2,
@@ -33,6 +35,7 @@ export const LEVEL_CONFIGS: Record<1 | 2 | 3, LevelConfig> = {
     accessory: 'beret',
     difficulty: 'medium',
     treesRequired: 4,
+    turtleCount: 3,
   },
   3: {
     level: 3,
@@ -43,6 +46,7 @@ export const LEVEL_CONFIGS: Record<1 | 2 | 3, LevelConfig> = {
     accessory: 'cape',
     difficulty: 'hard',
     treesRequired: 5,
+    turtleCount: 5,
   },
 }
 

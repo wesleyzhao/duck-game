@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLevelStore } from '../store/levelStore'
 import { useGameStore } from '../store/gameStore'
 import { useTimerStore, formatTime } from '../store/timerStore'
+import { getLevelConfig } from '../config/levels'
 import { speak } from '../services/voiceService'
 
 export function LevelCompleteOverlay() {
@@ -49,6 +50,9 @@ export function LevelCompleteOverlay() {
 
           // Reset duck to center of map so it doesn't immediately touch a tree
           useGameStore.getState().teleportPlayer(1000, 700)
+
+          // Spawn turtles for the new level
+          spawnTurtlesForLevel(currentLevel + 1)
 
           // Pre-generate questions in background (non-blocking)
           useLevelStore.getState().generateQuestionsForLevel()
@@ -163,4 +167,44 @@ function regenerateTreesForLevel(level: number) {
       mathSolved: false,
     })
   })
+}
+
+// Helper function to spawn turtles for a level
+function spawnTurtlesForLevel(level: number) {
+  const gameStore = useGameStore.getState()
+  const config = getLevelConfig(level)
+  const world = gameStore.world
+
+  // Remove existing turtles
+  const existingTurtles = gameStore.entities.filter(e => e.shape === 'turtle')
+  existingTurtles.forEach(turtle => {
+    gameStore.removeEntity(turtle.id)
+  })
+
+  // Spawn new turtles
+  for (let i = 0; i < config.turtleCount; i++) {
+    // Random position avoiding the center (where duck spawns)
+    let x: number, y: number
+    do {
+      x = 100 + Math.random() * (world.width - 200)
+      y = 100 + Math.random() * (world.height - 200)
+    } while (Math.abs(x - 1000) < 200 && Math.abs(y - 700) < 200) // Avoid center
+
+    // Random initial direction
+    const speed = 1.5 + Math.random() * 0.5  // Slightly varied speeds
+
+    gameStore.addEntity({
+      id: `turtle-${level}-${i}-${Date.now()}`,
+      name: `Turtle ${i + 1}`,
+      x,
+      y,
+      width: 50,
+      height: 40,
+      shape: 'turtle',
+      color: '#2D5A27',
+      solid: false,  // Don't block movement, just hurt on contact
+      behaviors: [{ type: 'bounce', speed }],
+      isEnemy: true,
+    })
+  }
 }
