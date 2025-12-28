@@ -2,6 +2,7 @@ import { Application, Graphics, Container } from 'pixi.js'
 import { useGameStore } from '../store/gameStore'
 import { useMathStore } from '../store/mathStore'
 import { useLevelStore } from '../store/levelStore'
+import { Accessory } from '../config/levels'
 import { EntityConfig, ShapePrimitive } from '../types/game'
 
 export class GameRenderer {
@@ -402,6 +403,14 @@ export class GameRenderer {
       default:
         this.drawDuck(g, x, animY, scale, appearance.color)
     }
+
+    // Draw accessory on top (only for duck shape)
+    if (appearance.shape === 'duck' || !customShapes.has(appearance.shape.toLowerCase())) {
+      const accessory = useLevelStore.getState().getAccessory()
+      if (accessory !== 'none') {
+        this.drawAccessory(g, x, animY, scale, accessory)
+      }
+    }
   }
 
   private drawDuck(g: Graphics, x: number, y: number, scale: number, color: string): void {
@@ -527,6 +536,62 @@ export class GameRenderer {
     // Fluffy tail
     g.circle(x - bodyWidth * 0.4, y, 6 * scale)
     g.fill('#FFFFFF')
+  }
+
+  private drawAccessory(g: Graphics, x: number, y: number, scale: number, accessory: Accessory): void {
+    // Duck head position (same as in drawDuck)
+    const bodyWidth = 30 * scale
+    const bodyHeight = 20 * scale
+    const headRadius = 10 * scale
+    const headX = x + bodyWidth * 0.3
+    const headY = y - bodyHeight * 0.3
+
+    if (accessory === 'beret') {
+      // Draw a cute beret on top of the duck's head
+      const beretWidth = 16 * scale
+      const beretHeight = 8 * scale
+      const beretX = headX - 2 * scale
+      const beretY = headY - headRadius - 2 * scale
+
+      // Main beret shape (tilted ellipse)
+      g.ellipse(beretX, beretY, beretWidth / 2, beretHeight / 2)
+      g.fill('#E63946') // Red beret
+
+      // Little nub on top
+      g.circle(beretX - beretWidth * 0.3, beretY - beretHeight * 0.2, 3 * scale)
+      g.fill('#E63946')
+
+      // Band at bottom of beret
+      g.rect(beretX - beretWidth * 0.4, beretY + beretHeight * 0.2, beretWidth * 0.8, 2 * scale)
+      g.fill('#C1121F')
+    } else if (accessory === 'cape') {
+      // Draw a flowing cape behind the duck
+      const capeWidth = 35 * scale
+      const capeHeight = 30 * scale
+      const capeX = x - bodyWidth * 0.3
+      const capeY = y - bodyHeight * 0.1
+
+      // Cape main shape (flowing triangle-ish)
+      g.moveTo(capeX, capeY - 5 * scale) // Top attachment
+      g.lineTo(capeX - capeWidth * 0.4, capeY + capeHeight) // Bottom left
+      g.lineTo(capeX + capeWidth * 0.1, capeY + capeHeight * 0.8) // Bottom middle
+      g.lineTo(capeX - capeWidth * 0.1, capeY + capeHeight * 0.9) // Wave
+      g.lineTo(capeX + capeWidth * 0.3, capeY + capeHeight * 0.6) // Bottom right
+      g.lineTo(capeX + 5 * scale, capeY - 5 * scale) // Top right attachment
+      g.closePath()
+      g.fill('#7B2CBF') // Royal purple cape
+
+      // Cape inner lining (lighter)
+      g.moveTo(capeX + 2 * scale, capeY)
+      g.lineTo(capeX - capeWidth * 0.25, capeY + capeHeight * 0.7)
+      g.lineTo(capeX + capeWidth * 0.15, capeY + capeHeight * 0.5)
+      g.closePath()
+      g.fill('#9D4EDD') // Lighter purple
+
+      // Collar/clasp
+      g.circle(capeX + 2 * scale, capeY - 3 * scale, 4 * scale)
+      g.fill('#FFD700') // Gold clasp
+    }
   }
 
   private drawCustomShape(
