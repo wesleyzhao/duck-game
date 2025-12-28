@@ -85,35 +85,21 @@ export function HUD() {
   return (
     <>
       <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-start pointer-events-none">
-        {/* Timer and Health - Left side */}
-        <div className="flex flex-col gap-2">
-          {/* Timer display */}
-          <div className="bg-slate-800/80 text-white rounded-xl px-4 py-2 font-mono">
-            <div className="flex items-center gap-2 text-2xl">
-              <span>⏱️</span>
-              <span>{formatTime(elapsedTime)}</span>
-            </div>
-            <div className="text-sm text-slate-300">
-              🏆 Best: {bestTime !== null ? formatTime(bestTime) : '--:--.--'}
-            </div>
-          </div>
-
-          {/* Lives as Duck Emojis */}
-          <div className="flex gap-1">
-            {Array.from({ length: maxLives }).map((_, i) => (
-              <span
-                key={i}
-                className="text-3xl transition-all duration-300"
-                style={{
-                  opacity: i < lives ? 1 : 0.2,
-                  filter: i < lives ? 'none' : 'grayscale(100%)',
-                  transform: i < lives ? 'scale(1)' : 'scale(0.8)',
-                }}
-              >
-                🐤
-              </span>
-            ))}
-          </div>
+        {/* Lives as Duck Emojis - Left side */}
+        <div className="flex gap-1">
+          {Array.from({ length: maxLives }).map((_, i) => (
+            <span
+              key={i}
+              className="text-3xl transition-all duration-300"
+              style={{
+                opacity: i < lives ? 1 : 0.2,
+                filter: i < lives ? 'none' : 'grayscale(100%)',
+                transform: i < lives ? 'scale(1)' : 'scale(0.8)',
+              }}
+            >
+              🐤
+            </span>
+          ))}
         </div>
 
         {/* Level indicator - center */}
@@ -150,6 +136,21 @@ export function HUD() {
             }}>🎂</span>
             <span>{points}</span>
           </span>
+        </div>
+      </div>
+
+      {/* Timer - Bottom left, smaller and subtle */}
+      <div className="absolute bottom-0 left-0 p-4 pointer-events-none">
+        <div className="bg-slate-800/60 text-white rounded-lg px-3 py-1.5 font-mono text-sm">
+          <div className="flex items-center gap-1.5">
+            <span>⏱️</span>
+            <span>{formatTime(elapsedTime)}</span>
+            {bestTime !== null && (
+              <span className="text-slate-400 text-xs ml-2">
+                🏆 {formatTime(bestTime)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
