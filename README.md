@@ -10,6 +10,13 @@ This repo contains two DuckWorld apps in a single GitHub project:
 
 Each app is a standalone Vite project and can be run independently.
 
+## Screenshots
+
+| DuckWorld 2D | DuckWorld 3D |
+| --- | --- |
+| ![DuckWorld 2D](screenshots/duckworld2d-screen.png) | ![DuckWorld 3D](screenshots/duckworld3d-screen.png) |
+| ![DuckWorld 2D Alt](screenshots/duckworld2d-screen-2.png) | ![DuckWorld 3D Alt](screenshots/duckworld3d-screen2.png) |
+
 ## Run The Apps (Independent)
 
 ```bash
