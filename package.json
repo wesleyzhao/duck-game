@@ -1,29 +1,18 @@
 {
-  "name": "duckworld",
+  "name": "emerson-game",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@codemirror/lang-javascript": "^6.2.4",
-    "@uiw/react-codemirror": "^4.25.4",
-    "pixi.js": "^8.6.6",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "zustand": "^5.0.2"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
-    "typescript": "~5.6.2",
-    "vite": "^6.0.5"
+    "dev:2d": "npm --workspace ./apps/duckworld-2d run dev",
+    "dev:3d": "npm --workspace ./apps/duckworld-3d run dev",
+    "build:2d": "npm --workspace ./apps/duckworld-2d run build",
+    "build:3d": "npm --workspace ./apps/duckworld-3d run build",
+    "preview:2d": "npm --workspace ./apps/duckworld-2d run preview",
+    "preview:3d": "npm --workspace ./apps/duckworld-3d run preview",
+    "lint:3d": "npm --workspace ./apps/duckworld-3d run lint",
+    "secret-scan:staged": "./scripts/secret-scan.sh --staged",
+    "secret-scan:history": "./scripts/secret-scan.sh --history"
   }
 }
